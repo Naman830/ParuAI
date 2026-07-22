@@ -1,3 +1,9 @@
+# ============================================================
+# Global .gitignore for the whole repo (client/ + server/)
+# The per-package client/.gitignore and server/.gitignore were
+# consolidated here — keep new rules in this file only.
+# ============================================================
+
 # dependencies
 node_modules/
 
@@ -7,6 +13,11 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
+
+# generated code (prisma client output — see server/prisma/schema.prisma)
+server/generated/
+generated/prisma/
 
 # logs
 logs
@@ -15,9 +26,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
 # build folders
 dist/
+dist-ssr/
 build/
 .next/
 out/
@@ -36,10 +49,19 @@ Thumbs.db
 
 # IDE / editors
 .vscode/
+!.vscode/extensions.json
 .idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # typescript
 *.tsbuildinfo
+
+# AI assistant notes
+CLAUDE.md
 
 # misc
 *.zip
