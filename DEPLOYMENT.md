@@ -56,6 +56,7 @@ Render dashboard → **New → Web Service**, then set:
 | `BETTER_AUTH_SECRET` | your freshly generated secret |
 | `BETTER_AUTH_URL` | this service's own URL, e.g. `https://paruai-api.onrender.com` |
 | `TRUSTED_ORIGINS` | the Vercel URL — **you won't have this until step 2** |
+| `BETTER_AUTH_API_KEY` | your Better Auth Dash key (`ba_…`) |
 | `AI_API_KEY` | your OpenRouter key |
 | `AI_MODEL` | `poolside/laguna-s-2.1:free` |
 
@@ -78,6 +79,30 @@ step), and the `postinstall` hook runs `prisma generate` to emit
 start at all. Hosts install with `NODE_ENV=production`, which **skips
 devDependencies**, so both packages have to sit in `dependencies`. Moving them
 back to `devDependencies` will break the deploy, not just the build.
+
+### Better Auth dashboard
+
+`lib/auth.ts` mounts the `dash()` plugin from `@better-auth/infra`, which
+connects this API to the hosted dashboard at https://dash.better-auth.com. It
+reads `BETTER_AUTH_API_KEY` from the environment by itself — the plugin is
+called with no arguments, so the **env var name is the wiring**; rename it and
+the connection silently goes inert.
+
+The dashboard's admin endpoints (ban user, send verification email, view
+2FA setup, …) are mounted under `/api/auth/*` but are not open to the world:
+each one requires a JWS signed by Dash's own JWKS and rejects anything older
+than five minutes.
+
+If the key is missing or wrong, auth keeps working normally — you just lose the
+dashboard connection.
+
+If the dashboard connects but its browser-side calls are blocked, add its
+origin to `TRUSTED_ORIGINS` alongside the Vercel one — that list also bounds
+which origins the plugin's invitation flows will redirect to:
+
+```
+TRUSTED_ORIGINS=https://your-app.vercel.app,https://dash.better-auth.com
+```
 
 ---
 

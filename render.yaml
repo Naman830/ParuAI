@@ -45,6 +45,12 @@ services:
       - key: TRUSTED_ORIGINS
         sync: false
 
+      # Better Auth Dash key (ba_…) from https://dash.better-auth.com — read by
+      # the dash() plugin in lib/auth.ts. Without it the server still boots and
+      # auth still works; only the dashboard connection is inert.
+      - key: BETTER_AUTH_API_KEY
+        sync: false
+
       # OpenRouter key from https://openrouter.ai/keys
       - key: AI_API_KEY
         sync: false

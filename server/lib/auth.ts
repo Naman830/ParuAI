@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { dash } from "@better-auth/infra";
 import prisma from "./prisma.js";
 
 // Must match server.ts's parsing exactly. Without the trim, a value like
@@ -15,6 +16,20 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql", // or "mysql", "postgresql", ...etc
   }),
+
+  plugins: [
+    // Hosted dashboard + analytics (dash.better-auth.com). Called bare on
+    // purpose: the plugin reads BETTER_AUTH_API_KEY from the environment
+    // itself, and its option resolver spreads the caller's options *over* the
+    // env fallback — so passing `apiKey: process.env.BETTER_AUTH_API_KEY`
+    // would write `apiKey: undefined` back over the fallback whenever the var
+    // is unset. `dotenv/config` above is what makes the env read work.
+    //
+    // activityTracking stays off (the default): enabling it adds a
+    // `lastActiveAt` column to user, which needs a Prisma migration against
+    // the live Neon database.
+    dash(),
+  ],
   emailAndPassword: {
     enabled: true,
   },
