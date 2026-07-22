@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Project } from "../types";
 import { Loader2Icon, PlusIcon, TrashIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 
@@ -12,43 +13,45 @@ const MyProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const navigate = useNavigate();
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const { data } = await api.get("/api/user/projects");
       setProjects(data.projects);
-      setLoading(false);
-    } catch (error: any) {
+    } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message || error.message);
+      toast.error(getErrorMessage(error));
+    } finally {
+      // Was only cleared on success → permanent spinner on any failure.
+      setLoading(false);
     }
-  };
+  }, []);
 
   const deleteProject = async (projectId: string) => {
     try {
-      const confirm = window.confirm(
+      const confirmed = window.confirm(
         "Are u sure you want to delete this project",
       );
-      if (!confirm) return;
+      if (!confirmed) return;
       const { data } = await api.delete(`/api/project/${projectId}`);
       toast.success(data.message);
       // WE CAN USE BOTH HERE THIS AND ALSO fetchProject() for deleting project
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
-    } catch (error: any) {
+    } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message || error.message);
-    } finally {
-      setLoading(false); //add setloading false
+      toast.error(getErrorMessage(error));
     }
   };
 
   useEffect(() => {
-    if (session?.user && !isPending) {
+    if (isPending) return;
+
+    if (session?.user) {
       fetchProject();
-    } else if (!isPending && !session?.user) {
+    } else {
       navigate("/");
       toast("Please login to view your project");
     }
-  }, [session, isPending]); // session?.user is problem in Useeffect it to add isPending
+  }, [session, isPending, navigate, fetchProject]);
 
   return (
     <>

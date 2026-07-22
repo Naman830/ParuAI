@@ -5,7 +5,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import {UserButton} from '@daveyplate/better-auth-ui'
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
+import { useCallback } from "react";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,21 +17,24 @@ export const Navbar = () => {
   const {data: session} = authClient.useSession()
 
 
-  const getCredits = async () => {
+  const getCredits = useCallback(async () => {
     try {
       const {data} = await api.get('/api/user/credits')
       setCredits(data.credits)
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message)
+    } catch (error) {
+      toast.error(getErrorMessage(error))
       console.log(error);
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (session?.user) {
+      // Fetching the credit balance when a session appears is the "subscribe to
+      // an external system" case; there is no render-time source for this value.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       getCredits()
     }
-  }, [session?.user]);
+  }, [session?.user, getCredits]);
 
 
   return (

@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Project } from "../types";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 
@@ -11,21 +12,21 @@ const Community = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const navigate = useNavigate();
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const { data } = await api.get("/api/project/published");
       setProjects(data.projects);
-      setLoading(false);
-    } catch (error: any) {
+    } catch (error) {
       console.log(error);
-      toast.error(error?.response?.data?.message || error.message);
-      setLoading(false); // ✅ add this
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProject();
-  }, []);
+  }, [fetchProject]);
 
   return (
     <>

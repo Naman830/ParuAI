@@ -12,7 +12,7 @@
     },
     "include": [
         "./**/*.ts"
-, "controllers/projectController.ts"    ],
+    ],
     "exclude": [
         "node_modules"
     ]

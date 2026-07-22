@@ -1,4 +1,5 @@
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 import { Sparkles, ArrowRight, Loader2Icon, Zap, LayoutDashboard, ShoppingCart, User, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -34,11 +35,13 @@ export const Hero = () => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      onSubmitHandler(e as any);
+      onSubmitHandler(e);
     }
   };
 
-  const onSubmitHandler = async (e: React.FormEvent) => {
+  const onSubmitHandler = async (
+    e: React.FormEvent | React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
     e.preventDefault();
     try {
       if (!session?.user) {
@@ -52,9 +55,9 @@ export const Hero = () => {
       });
       setLoading(false);
       navigate(`/projects/${data.projectId}`);
-    } catch (error: any) {
+    } catch (error) {
       setLoading(false);
-      toast.error(error?.response?.data?.message || error.message);
+      toast.error(getErrorMessage(error));
       console.log(error);
     }
   };

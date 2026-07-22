@@ -64,4 +64,7 @@ function Button({
   )
 }
 
+// shadcn generates this file with both exports; splitting it would break
+// `shadcn add`.
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants }

@@ -1,20 +1,14 @@
 import { X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type {
+  ElementUpdate,
+  SelectedElement,
+  SelectedElementStyles,
+} from "../../types";
 
 interface EditorPanelProps {
-  selectedElement: {
-    tagName: string;
-    className: string;
-    text: string;
-    styles: {
-      padding: string;
-      margin: string;
-      backgroundColor: string;
-      color: string;
-      fontSize: string;
-    };
-  } | null;
-  onUpdate: (updates: any) => void;
+  selectedElement: SelectedElement | null;
+  onUpdate: (updates: ElementUpdate) => void;
   onClose: () => void;
 }
 
@@ -32,13 +26,15 @@ const EditorPanel = ({
   if (!selectedElement || !values) return null;
 
   // handlechnage
-const handleChange = (field: string, value: string) => {
-  const newValues = { ...values, [field]: value };
-  setValues(newValues);
-  onUpdate({ [field]: value });
-};
+  const handleChange = (field: "text" | "className", value: string) => {
+    setValues({ ...values, [field]: value });
+    onUpdate({ [field]: value });
+  };
 
-  const handleStyleChange = (styleName: string, value: string) => {
+  const handleStyleChange = (
+    styleName: keyof SelectedElementStyles,
+    value: string,
+  ) => {
     const newStyles = { ...values.styles, [styleName]: value };
     setValues({ ...values, styles: newStyles });
 

@@ -1,4 +1,5 @@
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import type { Message, Project, Version } from "../../types";
 import {
   BotIcon,
@@ -7,7 +8,7 @@ import {
   SendIcon,
   UserIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -19,6 +20,8 @@ interface SidebarProps {
   setIsGenerating: (isGenerating: boolean) => void;
 }
 
+const POLL_INTERVAL_MS = 10000;
+
 const Sidebar = ({
   isMenuOpen,
   project,
@@ -27,63 +30,77 @@ const Sidebar = ({
   setIsGenerating,
 }: SidebarProps) => {
   const messageRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [input, setInput] = useState("");
 
-  const fetchProject = async () => {
+  const projectId = project.id;
+
+  const fetchProject = useCallback(async () => {
     try {
-      const { data } = await api.get(`/api/user/project/${project.id}`);
+      const { data } = await api.get(`/api/user/project/${projectId}`);
       setProject(data.project);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
     }
-  };
+  }, [projectId, setProject]);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  // The revision request can outlive this component (navigating away mid-run
+  // used to leave the interval firing against an unmounted tree).
+  useEffect(() => stopPolling, [stopPolling]);
 
   const handleRollback = async (versionId: string) => {
     try {
-      const confirm = window.confirm(
+      const confirmed = window.confirm(
         "Are you sure you want to rollback to this version?",
       );
-      if (!confirm) return;
+      if (!confirmed) return;
       setIsGenerating(true);
 
       const { data } = await api.get(
-        `/api/project/rollback/${project.id}/${versionId}`,
+        `/api/project/rollback/${projectId}/${versionId}`,
       );
-      const { data: data2 } = await api.get(`/api/user/project/${project.id}`);
-
       toast.success(data.message);
-      setProject(data2.project);
-
-      setIsGenerating(false);
-    } catch (error: any) {
-      setIsGenerating(false);
-      toast.error(error?.response?.data?.message || error.message);
+      await fetchProject();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   const handleRevisions = async (e: React.FormEvent) => {
     e.preventDefault();
-    let interval: number | undefined;
+    if (!input.trim() || isGenerating) return;
+
     try {
       setIsGenerating(true);
-      interval = setInterval(() => {
-        fetchProject();
-      }, 10000);
-      const { data } = await api.post(`/api/project/revision/${project.id}`, {
+      stopPolling();
+      // Surface the assistant's intermediate messages while the server works.
+      pollRef.current = setInterval(fetchProject, POLL_INTERVAL_MS);
+
+      const { data } = await api.post(`/api/project/revision/${projectId}`, {
         message: input,
       });
-      fetchProject();
-      toast.success(data.message);
       setInput("");
-      clearInterval(interval);
-      setIsGenerating(false);
-    } catch (error: any) {
-      setIsGenerating(false);
-      toast.error(error?.response?.data?.message || error.message);
+      toast.success(data.message);
+      await fetchProject();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
-      clearInterval(interval);
+      // Pull in whatever the server did manage to write (e.g. the refund notice).
+      await fetchProject();
+    } finally {
+      stopPolling();
+      setIsGenerating(false);
     }
   };
 
@@ -95,7 +112,8 @@ const Sidebar = ({
 
   return (
     <div
-      className={`h-full sm:max-w-sm  bg-[#09090B] border border-[#27272A] shadow-[0_0_40px_rgba(124,58,237,0.08)] transition-all ${isMenuOpen ? "max-sm:w-0 overflow-hidden" : "w-full"}`}
+      // Was inverted: opening the chat on mobile collapsed it to w-0.
+      className={`h-full sm:max-w-sm  bg-[#09090B] border border-[#27272A] shadow-[0_0_40px_rgba(124,58,237,0.08)] transition-all ${isMenuOpen ? "w-full" : "max-sm:w-0 max-sm:overflow-hidden sm:w-full"}`}
     >
       <div className="flex flex-col h-full">
         {/* Message Container*/}
@@ -115,20 +133,23 @@ const Sidebar = ({
                 return (
                   <div
                     key={msg.id}
-                    className={`flex items-end gap-3  ${isUser} ? "justify-end" : "justify-start"`}
+                    // The ternary used to sit *inside* the template string, so
+                    // user messages never right-aligned and the literal text
+                    // `? "justify-end" : "justify-start"` leaked into the class.
+                    className={`flex items-end gap-3 ${isUser ? "justify-end" : "justify-start"}`}
                   >
                     {!isUser && (
-                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center shadow">
+                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center shadow shrink-0">
                         <BotIcon className="size-4 text-[#A1A1AA]" />
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl transition-all ${isUser ? "bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white rounded-br-none " : "bg-[#18181B] border border-[#27272A] text-[#E4E4E7] rounded-bl-none"}`}
+                      className={`max-w-[80%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl transition-all whitespace-pre-wrap break-words ${isUser ? "bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white rounded-br-none " : "bg-[#18181B] border border-[#27272A] text-[#E4E4E7] rounded-bl-none"}`}
                     >
                       {msg.content}
                     </div>
                     {isUser && (
-                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center shrink-0">
                         <UserIcon className="size-4 text-[#A1A1AA]" />
                       </div>
                     )}
@@ -156,14 +177,18 @@ const Sidebar = ({
                       ) : (
                         <button
                           onClick={() => handleRollback(ver.id)}
-                          className="px-3 py-1 text-xs rounded-md bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white hover:opacity-90 transition"
+                          disabled={isGenerating}
+                          className="px-3 py-1 text-xs rounded-md bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white hover:opacity-90 disabled:opacity-50 transition"
                         >
                           Roll Back to this Version
                         </button>
                       )}
+                      {/* Was a double-quoted string, so this navigated to the
+                          literal path "/preview/${project.id}/${ver.id}". */}
                       <Link
-                        target="_blank "
-                        to={"/preview/${project.id}/${ver.id}"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        to={`/preview/${project.id}/${ver.id}`}
                       >
                         <EyeIcon className="size-7 p-1.5 rounded-lg bg-[#27272A] hover:bg-[#7C3AED] transition" />
                       </Link>
@@ -213,6 +238,7 @@ const Sidebar = ({
             />
 
             <button
+              type="submit"
               disabled={isGenerating || !input.trim()}
               className="absolute bottom-3 right-3 p-2 rounded-xl bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] hover:opacity-90 disabled:opacity-50 transition"
             >

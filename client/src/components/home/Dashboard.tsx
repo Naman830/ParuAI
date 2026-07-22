@@ -1,4 +1,6 @@
-import { motion } from "framer-motion";
+// Was "framer-motion", which is not a declared dependency — it only resolved
+// because `motion` hoists it. Every other file imports from "motion/react".
+import { motion } from "motion/react";
 
 const floatAnimation = {
   animate: {
@@ -7,7 +9,9 @@ const floatAnimation = {
   transition: {
     duration: 4,
     repeat: Infinity,
-    ease: "easeInOut",
+    // `as const` keeps this an Easing literal instead of widening to string,
+    // which failed the type-check and broke `npm run build`.
+    ease: "easeInOut" as const,
   },
 };
 

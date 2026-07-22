@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { Project } from "../types";
+import type { DeviceType, Project } from "../types";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowBigDownDashIcon,
   EyeIcon,
@@ -20,8 +21,19 @@ import ProjectPreview, {
   type ProjectPreviewRef,
 } from "../components/projects/ProjectPreview";
 import api from "@/configs/axios";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+
+const POLL_INTERVAL_MS = 10000;
+
+const DEVICES = [
+  { key: "phone", icon: SmartphoneIcon },
+  { key: "tablet", icon: TabletIcon },
+  { key: "desktop", icon: LaptopIcon },
+] as const satisfies ReadonlyArray<{ key: DeviceType; icon: LucideIcon }>;
+/** Matches the marker the server writes when background generation dies. */
+const GENERATION_FAILED_MARKER = "[generation-failed]";
 
 const Projects = () => {
   const { projectId } = useParams();
@@ -33,26 +45,34 @@ const Projects = () => {
   const { data: session, isPending } = authClient.useSession();
 
   const [isGenerating, setIsGenerating] = useState(true);
-  const [device, setDevice] = useState<"phone" | "tablet" | "desktop">(
-    "desktop",
-  );
+  const [device, setDevice] = useState<DeviceType>("desktop");
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const previewRef = useRef<ProjectPreviewRef>(null);
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const { data } = await api.get(`/api/user/project/${projectId}`);
-      setProject(data.project);
-      setIsGenerating(data.project.current_code ? false : true);
-      setLoading(false);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      const fetched: Project = data.project;
+      setProject(fetched);
+
+      // Background generation can fail; the server records it as an assistant
+      // message. Without this the spinner and the 10s poll ran forever.
+      const failed = fetched.conversation?.some((m) =>
+        m.content?.includes(GENERATION_FAILED_MARKER),
+      );
+      setIsGenerating(!fetched.current_code && !failed);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
+    } finally {
+      // Was only cleared on success → a failed first load span the spinner
+      // forever instead of showing the "Unable to load project" state.
+      setLoading(false);
     }
-  };
+  }, [projectId]);
 
   const saveProject = async () => {
     if (!previewRef.current) return;
@@ -64,8 +84,11 @@ const Projects = () => {
         code,
       });
       toast.success(data.message);
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+      // The save creates a new Version server-side; refresh so the sidebar
+      // shows it and "Current Version" stays accurate.
+      await fetchProject();
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
     } finally {
       setIsSaving(false);
@@ -76,46 +99,58 @@ const Projects = () => {
   const downloadCode = () => {
     const code = previewRef.current?.getCode() || project?.current_code;
     if (!code) {
-      if (isGenerating) {
-        return;
-      }
+      toast.error(
+        isGenerating
+          ? "Your website is still generating"
+          : "There is no code to download yet",
+      );
       return;
     }
     const element = document.createElement("a");
-    const file = new Blob([code], { type: "text/html" });
-    element.href = URL.createObjectURL(file);
+    const url = URL.createObjectURL(new Blob([code], { type: "text/html" }));
+    element.href = url;
     element.download = "index.html";
     document.body.appendChild(element);
     element.click();
+    // The anchor and the blob URL used to be leaked on every download.
+    document.body.removeChild(element);
+    URL.revokeObjectURL(url);
   };
+
   const togglePublish = async () => {
     try {
       const { data } = await api.get(`/api/user/publish-toggle/${projectId}`);
       toast.success(data.message);
+      // Trust the server's value rather than blind-flipping local state, which
+      // desynced whenever the request was rejected but still resolved.
       setProject((prev) =>
-        prev ? { ...prev, isPublished: !prev.isPublished } : null,
+        prev ? { ...prev, isPublished: data.isPublished } : null,
       );
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || error.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
       console.log(error);
     }
   };
 
   useEffect(() => {
+    if (isPending) return;
+
     if (session?.user) {
       fetchProject();
-    } else if (!isPending && !session?.user) {
+    } else {
       navigate("/");
       toast("Please login to view your projects");
     }
-  }, [session?.user, isPending, navigate]);
+  }, [session?.user, isPending, navigate, fetchProject]);
 
   useEffect(() => {
-    if (project && !project.current_code) {
-      const intervalId = setInterval(fetchProject, 10000);
-      return () => clearInterval(intervalId);
-    }
-  }, [project?.current_code]);
+    // Poll only while a generation is actually in flight — stops on success
+    // and on the failure marker instead of hammering the API forever.
+    if (!project?.id || project.current_code || !isGenerating) return;
+
+    const intervalId = setInterval(fetchProject, POLL_INTERVAL_MS);
+    return () => clearInterval(intervalId);
+  }, [project?.id, project?.current_code, isGenerating, fetchProject]);
 
   if (loading) {
     return (
@@ -161,14 +196,10 @@ const Projects = () => {
         </div>
         {/* middle */}
         <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-[#18181B] border border-[#27272A]">
-          {[
-            { key: "phone", icon: SmartphoneIcon },
-            { key: "tablet", icon: TabletIcon },
-            { key: "desktop", icon: LaptopIcon },
-          ].map(({ key, icon: Icon }) => (
+          {DEVICES.map(({ key, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setDevice(key as any)}
+              onClick={() => setDevice(key)}
               className={`p-2 rounded-lg transition ${
                 device === key
                   ? "bg-[#7C3AED] text-white"

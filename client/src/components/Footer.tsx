@@ -1,11 +1,6 @@
 import { Box, Twitter, Github } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 export const Footer = () => {
-
-const navigate = useNavigate()
-
-
   return (
     <footer className="bg-background-dark border-t border-border-dark pt-16 pb-8 px-6">
       <div className="max-w-[1280px] mx-auto">

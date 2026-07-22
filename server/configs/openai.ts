@@ -1,3 +1,4 @@
+import "dotenv/config";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -5,4 +6,14 @@ const openai = new OpenAI({
   apiKey: process.env.AI_API_KEY,
 });
 
-export default openai
+// Single source of truth for the generation model (was duplicated in 4 places).
+// Override with AI_MODEL in .env to swap models without touching code.
+export const AI_MODEL = process.env.AI_MODEL || "stepfun/step-3.5-flash:free";
+
+// OpenRouter's free tier rate-limits aggressively; this pause runs before the
+// first completion of a new project. Set AI_RATE_LIMIT_DELAY_MS=0 on a paid key.
+export const AI_RATE_LIMIT_DELAY_MS = Number(
+  process.env.AI_RATE_LIMIT_DELAY_MS ?? 4000,
+);
+
+export default openai;
