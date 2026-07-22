@@ -3,7 +3,13 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma.js";
 
-const trustedOrigins = process.env.TRUSTED_ORIGINS?.split(",") || [];
+// Must match server.ts's parsing exactly. Without the trim, a value like
+// "https://a.vercel.app, https://b.app" gave better-auth a space-prefixed
+// second origin that never matched, so CORS passed but auth 403'd.
+const trustedOrigins =
+  process.env.TRUSTED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) || [];
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {

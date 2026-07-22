@@ -1,0 +1,56 @@
+# Render Blueprint for the ParuAI API (server/).
+# The client is deployed separately on Vercel — see client/vercel.json.
+#
+# Usage: Render dashboard -> New -> Blueprint -> pick this repo.
+# Values marked `sync: false` are NOT stored in git; Render prompts for them
+# on first deploy, or you set them under Environment in the dashboard.
+
+services:
+  - type: web
+    name: paruai-api
+    runtime: node
+    plan: free
+    rootDir: server
+    region: singapore # match your Neon region to keep DB latency low
+
+    # `npm install` also runs the postinstall hook (`prisma generate`), which
+    # emits server/generated/prisma — that directory is gitignored, so without
+    # it the server cannot even start. `migrate deploy` is the only migration
+    # command safe to run against a live database.
+    buildCommand: npm install && npx prisma migrate deploy
+    startCommand: npm start
+
+    healthCheckPath: /
+
+    envVars:
+      # Render injects PORT itself; server.ts already reads process.env.PORT.
+      - key: NODE_ENV
+        value: production
+
+      # Pooled Neon connection string (the -pooler host).
+      - key: DATABASE_URL
+        sync: false
+
+      # openssl rand -base64 32
+      - key: BETTER_AUTH_SECRET
+        sync: false
+
+      # This service's own public URL, e.g. https://paruai-api.onrender.com
+      # Must have no trailing slash.
+      - key: BETTER_AUTH_URL
+        sync: false
+
+      # Comma-separated Vercel origin(s) of the client, no trailing slash,
+      # e.g. https://paruai.vercel.app
+      - key: TRUSTED_ORIGINS
+        sync: false
+
+      # OpenRouter key from https://openrouter.ai/keys
+      - key: AI_API_KEY
+        sync: false
+
+      - key: AI_MODEL
+        value: poolside/laguna-s-2.1:free
+
+      - key: AI_RATE_LIMIT_DELAY_MS
+        value: "4000"

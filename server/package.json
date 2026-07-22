@@ -6,7 +6,10 @@
   "scripts": {
     "start": "tsx server.ts",
     "server": "nodemon --exec tsx server.ts",
-    "build": "tsc"
+    "build": "prisma generate",
+    "deploy": "prisma generate && prisma migrate deploy",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +23,9 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "openai": "^6.27.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "prisma": "^7.4.2",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -28,9 +33,7 @@
     "@types/node": "^25.3.5",
     "@types/pg": "^8.18.0",
     "nodemon": "^3.1.14",
-    "prisma": "^7.4.2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

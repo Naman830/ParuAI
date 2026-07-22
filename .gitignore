@@ -55,7 +55,6 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 
 # typescript
 *.tsbuildinfo
