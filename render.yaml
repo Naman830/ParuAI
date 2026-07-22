@@ -54,3 +54,11 @@ services:
 
       - key: AI_RATE_LIMIT_DELAY_MS
         value: "4000"
+
+      # Bounds a stalled provider so the [generation-failed] marker is actually
+      # reachable and the client stops polling.
+      - key: AI_REQUEST_TIMEOUT_MS
+        value: "300000"
+
+      - key: AI_MAX_RETRIES
+        value: "2"
