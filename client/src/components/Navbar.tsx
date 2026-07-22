@@ -8,6 +8,7 @@ import api from "@/configs/axios";
 import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCallback } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,10 +39,10 @@ export const Navbar = () => {
 
 
   return (
-    <nav className="top-0 left-0 right-0 z-50 glass-nav border-b border-border-dark">
+    <nav className="top-0 left-0 right-0 z-50 glass-nav border-b border-border">
       <div className="relative max-w-[1280px] mx-auto px-6 h-20 flex items-center">
         {/* Left */}
-        <Link to="/" className="flex items-center gap-3 text-white">
+        <Link to="/" className="flex items-center gap-3 text-foreground">
           <div className="text-primary">
             <Box className="w-8 h-8" />
           </div>
@@ -60,7 +61,7 @@ export const Navbar = () => {
             <Link
               key={item.name}
               to={item.to}
-              className="text-text-secondary hover:text-white transition-colors text-sm font-medium"
+              className="text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
             >
               {item.name}
             </Link>
@@ -68,6 +69,7 @@ export const Navbar = () => {
         </div>
         {/* Right */}
         <div className="ml-auto flex items-center gap-4">
+          <ThemeToggle />
           {/* Desktop CTA */}
           {!session?.user ? (
 
@@ -101,7 +103,7 @@ export const Navbar = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="md:hidden absolute top-full left-0 w-full bg-surface-dark/95 backdrop-blur-xl border-t border-border-dark shadow-2xl overflow-hidden"
+                className="md:hidden absolute top-full left-0 w-full bg-card/95 backdrop-blur-xl border-t border-border shadow-2xl overflow-hidden"
               >
                 <motion.div
                   initial="hidden"
@@ -116,7 +118,7 @@ export const Navbar = () => {
                     },
                     visible: { transition: { staggerChildren: 0.08 } },
                   }}
-                  className="flex flex-col items-center py-8 gap-6 text-white"
+                  className="flex flex-col items-center py-8 gap-6 text-foreground"
                 >
                   {[
                     { name: "Home", to: "/" },

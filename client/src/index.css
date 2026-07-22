@@ -47,9 +47,12 @@
 
 @layer utilities {
   .glass-nav {
-    background: rgba(19, 17, 24, 0.7);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+  }
+  .dark .glass-nav {
+    background: rgba(19, 17, 24, 0.7);
   }
   .glow-text {
     text-shadow: 0 0 30px rgba(91, 19, 236, 0.3);
