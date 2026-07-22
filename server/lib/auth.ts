@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { dash } from "@better-auth/infra";
 import prisma from "./prisma.js";
+import { sendEmail } from "./email.js";
 
 // Must match server.ts's parsing exactly. Without the trim, a value like
 // "https://a.vercel.app, https://b.app" gave better-auth a space-prefixed
@@ -32,6 +33,13 @@ export const auth = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your ParuAI password",
+        html: `<p>Click the link below to reset your ParuAI password:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
+      });
+    },
   },
 
   user: {
