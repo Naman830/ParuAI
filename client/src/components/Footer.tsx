@@ -1,4 +1,4 @@
-import { Box, Twitter, Github } from "lucide-react";
+import { Box, Github, Linkedin } from "lucide-react";
 
 export const Footer = () => {
   return (
@@ -17,15 +17,21 @@ export const Footer = () => {
             <div className="flex gap-4">
               <a
                 className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                href="#"
+                href="https://github.com/Naman830"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
               >
-                <Twitter className="w-5 h-5" />
+                <Github className="w-5 h-5" />
               </a>
               <a
                 className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
-                href="#"
+                href="https://www.linkedin.com/in/namanweb/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
               >
-                <Github className="w-5 h-5" />
+                <Linkedin className="w-5 h-5" />
               </a>
             </div>
           </div>
