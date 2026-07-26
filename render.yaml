@@ -51,6 +51,16 @@ services:
       - key: BETTER_AUTH_API_KEY
         sync: false
 
+      # Brevo transactional-email API key (xkeysib-…) from Settings -> SMTP & API.
+      # Used by lib/email.ts to send forgot-password reset links over HTTP, since
+      # Render free tier blocks outbound SMTP ports. SMTP_FROM must be a sender
+      # verified in the Brevo dashboard.
+      - key: BREVO_API_KEY
+        sync: false
+
+      - key: SMTP_FROM
+        sync: false
+
       # OpenRouter key from https://openrouter.ai/keys
       - key: AI_API_KEY
         sync: false
