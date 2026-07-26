@@ -33,11 +33,22 @@ export const auth = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
-    sendResetPassword: async ({ user, url }) => {
+    sendResetPassword: async ({ user, token }) => {
+      // Build the link straight to the CLIENT reset-password page, not the
+      // better-auth `url`. That `url` points at this API's redirect endpoint
+      // with a *relative* callbackURL, so clicking it lands on the API domain
+      // (paruai-api.onrender.com/auth/reset-password → "Cannot GET"). The
+      // reset-password view lives only on the Vercel client, so link there
+      // directly with the token — better-auth-ui reads it from `?token=`.
+      const clientBaseURL =
+        process.env.CLIENT_URL?.trim() ||
+        trustedOrigins[0] ||
+        "http://localhost:5173";
+      const resetUrl = `${clientBaseURL}/auth/reset-password?token=${token}`;
       await sendEmail({
         to: user.email,
         subject: "Reset your ParuAI password",
-        html: `<p>Click the link below to reset your ParuAI password:</p><p><a href="${url}">${url}</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
+        html: `<p>Click the link below to reset your ParuAI password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
       });
     },
   },
