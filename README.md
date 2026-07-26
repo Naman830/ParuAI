@@ -55,11 +55,11 @@ and host it anywhere.
 ## 🧱 Tech stack
 
 <table>
-<tr><th align="left">🎨 Client</th><td>React 19 · Vite · TypeScript · Tailwind CSS v4 · shadcn/ui · better-auth</td></tr>
+<tr><th align="left">🎨 Client</th><td>React 19 · Vite · TypeScript · Tailwind CSS v4 · shadcn/ui · better-auth · next-themes (light/dark)</td></tr>
 <tr><th align="left">⚙️ Server</th><td>Express 5 · TypeScript (via <code>tsx</code>) · Prisma · PostgreSQL</td></tr>
 <tr><th align="left">🧠 AI</th><td>OpenAI SDK pointed at <a href="https://openrouter.ai">OpenRouter</a></td></tr>
 <tr><th align="left">🔐 Auth</th><td>better-auth — email + password, cookie sessions</td></tr>
-<tr><th align="left">✉️ Email</th><td>Nodemailer over SMTP — password-reset links only</td></tr>
+<tr><th align="left">✉️ Email</th><td><a href="https://www.brevo.com">Brevo</a> transactional HTTP API — password-reset links only</td></tr>
 </table>
 
 > [!NOTE]
@@ -123,7 +123,9 @@ All server config lives in `server/.env` (see `server/.env.example` for full com
 | ✅ `TRUSTED_ORIGINS` | Comma-separated frontend origin(s), e.g. `http://localhost:5173` |
 | 🧠 `AI_API_KEY` | Your OpenRouter API key |
 | 🤖 `AI_MODEL` | Generation model — defaults to a free OpenRouter model |
-| ✉️ `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | SMTP creds for password-reset emails |
+| ✉️ `BREVO_API_KEY` | Brevo API key (`xkeysib-…`) — sends password-reset emails over HTTPS |
+| 📮 `SMTP_FROM` | The "From" address on reset mail — must be a **verified sender** in Brevo |
+| 🔗 `CLIENT_URL` | Optional — frontend origin used to build the reset-password link (defaults to the first `TRUSTED_ORIGINS` entry) |
 
 The client only needs one variable, in `client/.env`:
 
@@ -136,6 +138,9 @@ The client only needs one variable, in `client/.env`:
 > ```bash
 > curl -s https://openrouter.ai/api/v1/models | grep -o '"id":"[^"]*:free"'
 > ```
+
+> [!NOTE]
+> Password-reset mail goes over Brevo's **HTTP API**, not SMTP — Render's free tier blocks outbound SMTP ports, so an SMTP client just hangs. Leave Brevo's "Authorized IPs" setting **disabled**: Render's free-tier outbound IP isn't static, so a whitelist turns every send into `401 unauthorized`.
 
 ---
 
@@ -174,6 +179,7 @@ server/                 # Express API
   controllers/            # project creation, revisions, publishing, credits
   lib/html.ts             # extracts and validates raw HTML from model output
   lib/auth.ts             # better-auth setup (sessions, password reset)
+  lib/email.ts            # Brevo HTTP sender — the only email path in the repo
   prisma/schema.prisma    # User, WebsiteProject, Conversation, Version, ...
 
 render.yaml              # Render deployment blueprint for the API
