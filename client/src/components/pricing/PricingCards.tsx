@@ -13,13 +13,13 @@ export const PricingCards = () => (
         whileHover={{ y: -5 }}
         className="bg-surface-dark border border-border-dark rounded-2xl p-8 flex flex-col h-full hover:border-text-secondary/30 transition-colors"
       >
-        <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
+        <h3 className="text-2xl font-bold text-foreground mb-2">Starter</h3>
         <p className="text-text-secondary text-sm mb-6">Perfect for trying out ParuAI.</p>
         <div className="mb-6">
-          <span className="text-4xl font-bold text-white">$0</span>
+          <span className="text-4xl font-bold text-foreground">$0</span>
           <span className="text-text-secondary">/month</span>
         </div>
-        <button className="w-full py-3 rounded-xl bg-surface-dark border border-border-dark hover:bg-border-dark text-white font-bold transition-colors mb-8">
+        <button className="w-full py-3 rounded-xl bg-surface-dark border border-border-dark hover:bg-border-dark text-foreground font-bold transition-colors mb-8">
           Get Started
         </button>
         <div className="flex-grow space-y-4">
@@ -51,33 +51,33 @@ export const PricingCards = () => (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider shadow-lg shadow-primary/30">
           Most Popular
         </div>
-        <h3 className="text-2xl font-bold text-white mb-2">Pro</h3>
+        <h3 className="text-2xl font-bold text-foreground mb-2">Pro</h3>
         <p className="text-text-secondary text-sm mb-6">For professional developers & teams.</p>
         <div className="mb-6">
-          <span className="text-4xl font-bold text-white">$29</span>
+          <span className="text-4xl font-bold text-foreground">$29</span>
           <span className="text-text-secondary">/month</span>
         </div>
         <button className="w-full py-3 rounded-xl bg-primary hover:bg-primary-dark text-white font-bold transition-all shadow-lg shadow-primary/20 hover:shadow-primary/40 mb-8">
           Start Free Trial
         </button>
         <div className="flex-grow space-y-4">
-          <div className="flex items-center gap-3 text-white text-sm font-medium">
+          <div className="flex items-center gap-3 text-foreground text-sm font-medium">
             <CheckCircle2 className="text-primary-light w-5 h-5" />
             <span>Unlimited AI generations</span>
           </div>
-          <div className="flex items-center gap-3 text-white text-sm font-medium">
+          <div className="flex items-center gap-3 text-foreground text-sm font-medium">
             <CheckCircle2 className="text-primary-light w-5 h-5" />
             <span>Production-ready React + Tailwind</span>
           </div>
-          <div className="flex items-center gap-3 text-white text-sm font-medium">
+          <div className="flex items-center gap-3 text-foreground text-sm font-medium">
             <CheckCircle2 className="text-primary-light w-5 h-5" />
             <span>Priority email support</span>
           </div>
-          <div className="flex items-center gap-3 text-white text-sm font-medium">
+          <div className="flex items-center gap-3 text-foreground text-sm font-medium">
             <CheckCircle2 className="text-primary-light w-5 h-5" />
             <span>Private projects</span>
           </div>
-          <div className="flex items-center gap-3 text-white text-sm font-medium">
+          <div className="flex items-center gap-3 text-foreground text-sm font-medium">
             <CheckCircle2 className="text-primary-light w-5 h-5" />
             <span>Advanced theme customization</span>
           </div>
@@ -89,12 +89,12 @@ export const PricingCards = () => (
         whileHover={{ y: -5 }}
         className="bg-surface-dark border border-border-dark rounded-2xl p-8 flex flex-col h-full hover:border-text-secondary/30 transition-colors"
       >
-        <h3 className="text-2xl font-bold text-white mb-2">Enterprise</h3>
+        <h3 className="text-2xl font-bold text-foreground mb-2">Enterprise</h3>
         <p className="text-text-secondary text-sm mb-6">Custom solutions for large orgs.</p>
         <div className="mb-6">
-          <span className="text-4xl font-bold text-white">Custom</span>
+          <span className="text-4xl font-bold text-foreground">Custom</span>
         </div>
-        <button className="w-full py-3 rounded-xl bg-white text-background-dark hover:bg-gray-200 font-bold transition-colors mb-8">
+        <button className="w-full py-3 rounded-xl bg-foreground text-background hover:opacity-90 font-bold transition-colors mb-8">
           Contact Sales
         </button>
         <div className="flex-grow space-y-4">

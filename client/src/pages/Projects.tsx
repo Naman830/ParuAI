@@ -161,9 +161,9 @@ const Projects = () => {
   }
 
   return project ? (
-    <div className="flex flex-col h-screen w-full bg-[#09090B] text-white">
+    <div className="flex flex-col h-screen w-full bg-background text-foreground">
       {/* Builder Navbar */}
-      <div className="flex max-sm:flex-col sm:items-center gap-4 px-4 py-3 border-b border-[#27272A] bg-[#09090B]/80 backdrop-blur-xl">
+      <div className="flex max-sm:flex-col sm:items-center gap-4 px-4 py-3 border-b border-border bg-background/80 backdrop-blur-xl">
         {/* Left */}
         <div className="flex items-center gap-3 sm:min-w-[280px]">
           <img
@@ -175,7 +175,7 @@ const Projects = () => {
 
           <div className="max-w-56">
             <p className="text-sm font-medium truncate">{project.name}</p>
-            <p className="text-xs text-[#71717A]">
+            <p className="text-xs text-muted-foreground">
               Previewing last save version
             </p>
           </div>
@@ -184,18 +184,18 @@ const Projects = () => {
             {isMenuOpen ? (
               <XIcon
                 onClick={() => setIsMenuOpen(false)}
-                className="size-6 cursor-pointer text-[#A1A1AA]"
+                className="size-6 cursor-pointer text-muted-foreground"
               />
             ) : (
               <MessageSquareIcon
                 onClick={() => setIsMenuOpen(true)}
-                className="size-6 cursor-pointer text-[#A1A1AA]"
+                className="size-6 cursor-pointer text-muted-foreground"
               />
             )}
           </div>
         </div>
         {/* middle */}
-        <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-[#18181B] border border-[#27272A]">
+        <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl bg-card border border-border">
           {DEVICES.map(({ key, icon: Icon }) => (
             <button
               key={key}
@@ -203,7 +203,7 @@ const Projects = () => {
               className={`p-2 rounded-lg transition ${
                 device === key
                   ? "bg-[#7C3AED] text-white"
-                  : "text-[#A1A1AA] hover:bg-[#27272A]"
+                  : "text-muted-foreground hover:bg-muted"
               }`}
             >
               <Icon className="size-4" />
@@ -215,7 +215,7 @@ const Projects = () => {
           <button
             onClick={saveProject}
             disabled={isSaving}
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-[#7C3AED] transition"
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-[#7C3AED] transition"
           >
             {isSaving ? (
               <Loader2Icon className="animate-spin" size={16} />
@@ -225,7 +225,7 @@ const Projects = () => {
             Save
           </button>
           <Link
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-[#7C3AED] transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-[#7C3AED] transition"
             target="_blank"
             to={`/preview/${project.id}`}
           >
@@ -240,7 +240,7 @@ const Projects = () => {
           </button>
           <button
             onClick={togglePublish}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18181B] border border-[#27272A] hover:border-[#7C3AED] transition"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-[#7C3AED] transition"
           >
             {project.isPublished ? (
               <EyeOffIcon size={16} />
@@ -273,8 +273,8 @@ const Projects = () => {
       </div>
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center h-[80vh] bg-[#09090B]">
-      <h1 className="text-2xl font-semibold text-[#A1A1AA]">
+    <div className="flex flex-col items-center justify-center h-[80vh] bg-background">
+      <h1 className="text-2xl font-semibold text-muted-foreground">
         Unable to load project
       </h1>
     </div>

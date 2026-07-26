@@ -6,7 +6,7 @@ export const Templates = () => {
   return (
     <section className="py-20 px-6 max-w-[1280px] mx-auto">
       <div className="text-center mb-16">
-        <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+        <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
           Start with a spark
         </h2>
         <p className="text-text-secondary max-w-2xl mx-auto text-lg">
@@ -59,7 +59,7 @@ export const Templates = () => {
                 </span>
               </div>
             </div>
-            <h3 className="text-white font-bold text-lg group-hover:text-primary transition-colors">
+            <h3 className="text-foreground font-bold text-lg group-hover:text-primary transition-colors">
               {item.title}
             </h3>
             <p className="text-text-secondary text-sm">{item.desc}</p>

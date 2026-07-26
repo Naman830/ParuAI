@@ -81,7 +81,7 @@ export const Navbar = () => {
           </button>
           ): (
             <>
-              <button className="bg-white/10 px-5 py-1.5 text-xs sm:text-sm border text-gray-200 rounded-full">Credits : <span className="text-indigo-300">{credits}</span></button>
+              <button className="bg-foreground/10 px-5 py-1.5 text-xs sm:text-sm border text-muted-foreground rounded-full">Credits : <span className="text-primary">{credits}</span></button>
             <UserButton size='icon'/>
             </>
           )

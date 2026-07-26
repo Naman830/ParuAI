@@ -7,19 +7,19 @@ export const TrustSection = () => (
         Trusted by next-gen builders
       </p>
       <div className="flex flex-wrap justify-center gap-10 md:gap-20 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
-        <div className="flex items-center gap-2 text-white font-bold text-xl">
+        <div className="flex items-center gap-2 text-foreground font-bold text-xl">
           <Triangle className="w-6 h-6" /> AcmeCorp
         </div>
-        <div className="flex items-center gap-2 text-white font-bold text-xl">
+        <div className="flex items-center gap-2 text-foreground font-bold text-xl">
           <Hexagon className="w-6 h-6" /> HexaTech
         </div>
-        <div className="flex items-center gap-2 text-white font-bold text-xl">
+        <div className="flex items-center gap-2 text-foreground font-bold text-xl">
           <Flower2 className="w-6 h-6" /> Bloom
         </div>
-        <div className="flex items-center gap-2 text-white font-bold text-xl">
+        <div className="flex items-center gap-2 text-foreground font-bold text-xl">
           <InfinityIcon className="w-6 h-6" /> Infinity
         </div>
-        <div className="flex items-center gap-2 text-white font-bold text-xl">
+        <div className="flex items-center gap-2 text-foreground font-bold text-xl">
           <Compass className="w-6 h-6" /> NorthStar
         </div>
       </div>

@@ -7,7 +7,7 @@ import {
 const Settings = () => {
   return (
     <div
-      className="w-full min-h-screen bg-[#09090B] flex flex-col items-center px-4 py-16
+      className="w-full min-h-screen bg-background flex flex-col items-center px-4 py-16
     "
     >
       {/* Wrapper */}
@@ -16,16 +16,16 @@ const Settings = () => {
           classNames={{
             card: {
               base: `
-                bg-[#18181B]/80 backdrop-blur-xl
-                border border-[#27272A]
+                bg-card/80 backdrop-blur-xl
+                border border-border
                 rounded-2xl
-                shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_10px_30px_rgba(0,0,0,0.6)]
+                shadow-[var(--panel-shadow)]
                 transition-all duration-300
                 hover:border-[#7C3AED]/40
               `,
               footer: `
-                bg-[#18181B]/60
-                border-t border-[#27272A]
+                bg-card/60
+                border-t border-border
                 rounded-b-2xl
               `,
             },
@@ -35,16 +35,16 @@ const Settings = () => {
           <ChangePasswordCard
             classNames={{
               base: `
-              bg-[#18181B]/80 backdrop-blur-xl
-              border border-[#27272A]
+              bg-card/80 backdrop-blur-xl
+              border border-border
               rounded-2xl
-              shadow-[0_10px_30px_rgba(0,0,0,0.6)]
+              shadow-[var(--panel-shadow)]
               transition-all duration-300
               hover:border-[#7C3AED]/40
             `,
               footer: `
-              bg-[#18181B]/60
-              border-t border-[#27272A]
+              bg-card/60
+              border-t border-border
               rounded-b-2xl
             `,
             }}
@@ -54,10 +54,10 @@ const Settings = () => {
           <DeleteAccountCard
             classNames={{
               base: `
-              bg-[#18181B]/80 backdrop-blur-xl
-              border border-[#27272A]
+              bg-card/80 backdrop-blur-xl
+              border border-border
               rounded-2xl
-              shadow-[0_10px_30px_rgba(0,0,0,0.6)]
+              shadow-[var(--panel-shadow)]
               transition-all duration-300
               hover:border-red-500/40
             `,

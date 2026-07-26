@@ -19,10 +19,9 @@
   --color-primary-dark: #4a0ec0;
   --color-primary-light: #7c42f2;
   --color-background-light: #f6f6f8;
-  --color-background-dark: #131118;
-  --color-surface-dark: #1f1c27;
-  --color-border-dark: #2e2839;
-  --color-text-secondary: #a69db9;
+  /* NOTE: the `*-dark` / `text-secondary` tokens are declared in `@theme inline`
+     below so they can resolve through CSS variables and follow the light/dark
+     toggle. The names are historical — they are no longer dark-only. */
 
   /* --radius-DEFAULT: 1rem;
   --radius-lg: 1.5rem;
@@ -58,8 +57,8 @@
     text-shadow: 0 0 30px rgba(91, 19, 236, 0.3);
   }
   .grid-bg {
-    background-image: linear-gradient(rgba(46, 40, 57, 0.2) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(46, 40, 57, 0.2) 1px, transparent 1px);
+    background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 }
@@ -95,24 +94,37 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  /* Light theme. Not flat white: a faintly violet off-white page with pure
+     white cards, so the brand purple reads as an accent instead of the only
+     colour on the page. Text is near-black for maximum contrast. */
+  --background: #f7f7fb;
+  --foreground: #0a0a0f;
+  --card: #ffffff;
+  --card-foreground: #0a0a0f;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0f;
   --primary: #5b13ec;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #f1f0f6;
+  --secondary-foreground: #0a0a0f;
+  --muted: #eeedf4;
+  --muted-foreground: #55516b;
+  --accent: #f1f0f6;
+  --accent-foreground: #0a0a0f;
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e4e2ee;
+  --input: #e4e2ee;
+  --ring: #5b13ec;
+
+  /* Aliases behind the historical `*-dark` utility names. */
+  --surface: #ffffff;
+  --surface-sunken: #f1f0f6;
+  --text-secondary: #55516b;
+  --grid-line: rgba(91, 19, 236, 0.09);
+  /* Panel elevation. Light mode can't use near-black drop shadows, so the
+     depth cue is a soft violet-tinted shadow instead. */
+  --panel-shadow: 0 18px 45px rgba(24, 16, 56, 0.1);
+  --panel-shadow-lg: 0 24px 60px rgba(24, 16, 56, 0.16);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -130,24 +142,32 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: #09090b;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #18181b;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #18181b;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.87 0.00 0);
   --primary-foreground: oklch(0.985 0 0);;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
   --accent: oklch(0.371 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: #27272a;
+  --input: #27272a;
   --ring: oklch(0.556 0 0);
+
+  /* Aliases behind the historical `*-dark` utility names. */
+  --surface: #1f1c27;
+  --surface-sunken: #131118;
+  --text-secondary: #a69db9;
+  --grid-line: rgba(46, 40, 57, 0.2);
+  --panel-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  --panel-shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
@@ -165,6 +185,14 @@
 
 @theme inline {
   --font-sans: 'Geist Variable', sans-serif;
+
+  /* Historical names, now theme-aware: `bg-surface-dark`, `bg-background-dark`,
+     `border-border-dark` and `text-text-secondary` follow the toggle. */
+  --color-surface-dark: var(--surface);
+  --color-background-dark: var(--surface-sunken);
+  --color-border-dark: var(--border);
+  --color-text-secondary: var(--text-secondary);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

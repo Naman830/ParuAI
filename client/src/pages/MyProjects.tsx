@@ -65,7 +65,7 @@ const MyProjects = () => {
             <div>
               {/* HEADING + BUTTON FOR CREATE NEW */}
               <div className="flex justify-between items-center mb-14">
-                <h1 className="text-3xl font-semibold tracking-tight text-white">
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                   My Projects
                 </h1>
 
@@ -87,13 +87,13 @@ const MyProjects = () => {
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="relative group w-full h-full flex flex-col cursor-pointer rounded-2xl overflow-hidden bg-[#18181B]/80 backdrop-blur-xl border border-[#27272A] hover:border-[#7C3AED]/50 shadow-lg hover:shadow-[0_0_40px_rgba(124,58,237,0.15)] transition-all duration-300 hover:-translate-y-1
+                    className="relative group w-full h-full flex flex-col cursor-pointer rounded-2xl overflow-hidden bg-card/80 backdrop-blur-xl border border-border hover:border-[#7C3AED]/50 shadow-lg hover:shadow-[0_0_40px_rgba(124,58,237,0.15)] transition-all duration-300 hover:-translate-y-1
                     "
                   >
                     {/* DESKTOP LIKE MINI PREVIEW */}
                     <div
                       onClick={() => navigate(`/projects/${project.id}`)}
-                      className="relative w-full h-40 bg-black overflow-hidden border-b border-[#27272A]"
+                      className="relative w-full h-40 bg-muted overflow-hidden border-b border-border"
                     >
                       {project.current_code ? (
                         <iframe
@@ -103,7 +103,7 @@ const MyProjects = () => {
                           style={{ transform: "scale(0.25)" }}
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
                           <p>No Preview</p>
                         </div>
                       )}
@@ -118,13 +118,13 @@ const MyProjects = () => {
                           {project.name}
                         </h2>
 
-                        <button className="  text-[12px] px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-gray-300">
+                        <button className="  text-[12px] px-2 py-0.5 bg-foreground/5 border border-border rounded-full text-muted-foreground">
                           Website
                         </button>
                       </div>
 
                       {/* Description */}
-                      <p className="text-gray-400 mt-2 text-sm leading-relaxed line-clamp-2">
+                      <p className="text-muted-foreground mt-2 text-sm leading-relaxed line-clamp-2">
                         {project.initial_prompt}
                       </p>
 
@@ -132,7 +132,7 @@ const MyProjects = () => {
                         onClick={(e) => e.stopPropagation()}
                         className="mt-auto "
                       >
-                        <span className="text-[13px] text-gray-500">
+                        <span className="text-[13px] text-muted-foreground">
                           {new Date(
                             project.createdAt || "",
                           ).toLocaleDateString()}
@@ -140,17 +140,17 @@ const MyProjects = () => {
                         </span>
                       </div>
 
-                      <div className="flex gap-3 text-white text-sm mt-2">
+                      <div className="flex gap-3 text-foreground text-sm mt-2">
                         <button
                           onClick={() => navigate(`/preview/${project.id}`)}
-                          className="flex-1 text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-[#27272A] transition-all"
+                          className="flex-1 text-sm px-3 py-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 border border-border transition-all"
                         >
                           Preview
                         </button>
 
                         <button
                           onClick={() => navigate(`/projects/${project.id}`)}
-                          className="flex-1 text-sm px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-[#27272A] transition-all"
+                          className="flex-1 text-sm px-3 py-2 rounded-lg bg-foreground/5 hover:bg-foreground/10 border border-border transition-all"
                         >
                           Open
                         </button>
@@ -158,7 +158,7 @@ const MyProjects = () => {
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
                       <TrashIcon
-                        className="absolute top-3 right-3 scale-0 group-hover:scale-100 bg-[#18181B] border border-[#27272A] p-1.5 size-7 rounded-lg text-red-500  hover:bg-red-500/10 transition-all cursor-pointer"
+                        className="absolute top-3 right-3 scale-0 group-hover:scale-100 bg-card border border-border p-1.5 size-7 rounded-lg text-red-500  hover:bg-red-500/10 transition-all cursor-pointer"
                         onClick={() => deleteProject(project.id)}
                       />
                     </div>
@@ -169,7 +169,7 @@ const MyProjects = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-[80vh] text-center">
-            <h1 className="text-3xl font-semibold text-gray-300 mb-6">
+            <h1 className="text-3xl font-semibold text-muted-foreground mb-6">
               You have No Projects Yet!
             </h1>
 

@@ -103,11 +103,11 @@ export const Hero = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="text-5xl md:text-7xl font-bold leading-[1.08] tracking-[-0.02em] text-white"
+            className="text-5xl md:text-7xl font-bold leading-[1.08] tracking-[-0.02em] text-foreground"
           >
             Build the future,
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-300 to-primary-light animate-gradient-x">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground via-violet-400 to-primary animate-gradient-x">
               prompt by prompt.
             </span>
           </motion.h1>
@@ -119,7 +119,7 @@ export const Hero = () => {
             className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto font-light leading-relaxed"
           >
             Describe your dream website and watch{" "}
-            <span className="text-white font-medium">ParuAI</span> turn thoughts into
+            <span className="text-foreground font-medium">ParuAI</span> turn thoughts into
             production-ready code instantly. No config, just create.
           </motion.p>
         </div>
@@ -149,17 +149,19 @@ export const Hero = () => {
             onSubmit={onSubmitHandler}
             className="relative rounded-2xl overflow-hidden"
             style={{
-              background: "rgba(31, 28, 39, 0.92)",
+              // Theme-aware: these resolve through the light/dark variables in
+              // index.css rather than being pinned to the dark palette.
+              background: "var(--card)",
               backdropFilter: "blur(20px)",
-              border: focused ? "1px solid rgba(91, 19, 236, 0.55)" : "1px solid rgba(46, 40, 57, 0.9)",
+              border: focused ? "1px solid rgba(91, 19, 236, 0.55)" : "1px solid var(--border)",
               boxShadow: focused
-                ? "0 0 0 4px rgba(91, 19, 236, 0.08), 0 24px 60px rgba(0,0,0,0.5)"
-                : "0 20px 50px rgba(0,0,0,0.4)",
+                ? "0 0 0 4px rgba(91, 19, 236, 0.1), var(--panel-shadow-lg)"
+                : "var(--panel-shadow)",
               transition: "border-color 0.25s ease, box-shadow 0.25s ease",
             }}
           >
             {/* Top bar with sparkle and char count */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-2 border-b border-white/5">
+            <div className="flex items-center justify-between px-5 pt-4 pb-2 border-b border-border/60">
               <div className="flex items-center gap-2.5">
                 <div className={`transition-all duration-300 ${focused ? "text-primary scale-110" : "text-text-secondary"}`}>
                   <Sparkles className="w-4 h-4" />
@@ -190,7 +192,7 @@ export const Hero = () => {
               onKeyDown={handleKeyDown}
               rows={4}
               placeholder="A modern portfolio website with glassmorphism, animated sections, and a minimal developer-focused layout..."
-              className="w-full resize-none bg-transparent text-white placeholder:text-text-secondary/60 outline-none px-5 pt-3 pb-3 text-base leading-relaxed font-normal tracking-[0.01em]"
+              className="w-full resize-none bg-transparent text-foreground placeholder:text-text-secondary/60 outline-none px-5 pt-3 pb-3 text-base leading-relaxed font-normal tracking-[0.01em]"
               style={{
                 minHeight: "110px",
                 maxHeight: "260px",
@@ -200,10 +202,10 @@ export const Hero = () => {
             />
 
             {/* Bottom action bar */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-t border-white/5">
+            <div className="flex items-center justify-between px-5 py-3.5 border-t border-border/60">
               <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-text-secondary/60 select-none">
-                <kbd className="px-1.5 py-0.5 rounded bg-white/8 border border-white/10 font-mono text-[10px]">⌘</kbd>
-                <kbd className="px-1.5 py-0.5 rounded bg-white/8 border border-white/10 font-mono text-[10px]">↵</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-foreground/8 border border-border font-mono text-[10px]">⌘</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-foreground/8 border border-border font-mono text-[10px]">↵</kbd>
                 <span>to generate</span>
               </span>
 
@@ -247,7 +249,7 @@ export const Hero = () => {
                 key={label}
                 type="button"
                 onClick={() => setInput(prompt)}
-                className="group flex items-center gap-1.5 text-xs text-text-secondary hover:text-white bg-surface-dark/70 hover:bg-primary/15 border border-border-dark hover:border-primary/40 rounded-full px-3.5 py-1.5 transition-all duration-200"
+                className="group flex items-center gap-1.5 text-xs text-text-secondary hover:text-foreground bg-surface-dark/70 hover:bg-primary/15 border border-border-dark hover:border-primary/40 rounded-full px-3.5 py-1.5 transition-all duration-200"
               >
                 <Icon className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                 {label}

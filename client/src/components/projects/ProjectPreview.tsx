@@ -103,7 +103,7 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
     };
 
     return (
-      <div className="relative h-full flex-1 bg-[#09090B]  border border-[#27272A] overflow-hidden">
+      <div className="relative h-full flex-1 bg-background  border border-border overflow-hidden">
         {project.current_code ? (
           <>
             <iframe
@@ -139,8 +139,8 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
           // Previously rendered nothing at all, so a failed generation left a
           // silent black rectangle with no explanation.
           <div className="h-full flex flex-col items-center justify-center gap-2 text-center px-6">
-            <p className="text-[#FAFAFA] font-medium">No preview available</p>
-            <p className="text-sm text-[#71717A]">
+            <p className="text-foreground font-medium">No preview available</p>
+            <p className="text-sm text-muted-foreground">
               Generation didn't produce any code. Your credits were refunded —
               try sending the request again.
             </p>

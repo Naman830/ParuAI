@@ -6,7 +6,7 @@ export const CTA = () => (
     ></div>
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[100px] -z-10"></div>
     <div className="max-w-4xl mx-auto text-center relative z-10">
-      <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight">
+      <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-8 leading-tight">
         Ready to build something <br />
         amazing today?
       </h2>
@@ -19,7 +19,7 @@ export const CTA = () => (
           Get Started for Free
         </button>
 
-        <button className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-surface-dark border border-border-dark rounded-full font-semibold text-base sm:text-lg   hover:border-primary text-white transition-colors active:translate-y-0">
+        <button className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 bg-surface-dark border border-border-dark rounded-full font-semibold text-base sm:text-lg   hover:border-primary text-foreground transition-colors active:translate-y-0">
           View Documentation
         </button>
       </div>

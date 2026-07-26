@@ -47,7 +47,7 @@ const View = () => {
           showEditorPanel={false}
         />
       ) : (
-        <div className="flex items-center justify-center h-full text-[#A1A1AA]">
+        <div className="flex items-center justify-center h-full text-muted-foreground">
           This project is not available.
         </div>
       )}

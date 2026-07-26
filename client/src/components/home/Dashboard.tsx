@@ -16,7 +16,7 @@ const floatAnimation = {
 };
 
 const shimmer =
-  "relative overflow-hidden before:absolute before:inset-0 before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent";
+  "relative overflow-hidden before:absolute before:inset-0 before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-foreground/10 before:to-transparent";
 
 function DashboardPreview() {
   return (

@@ -46,7 +46,7 @@ const Community = () => {
                   <motion.h1
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-4xl md:text-5xl font-bold text-white mb-4 glow-text tracking-tight"
+                    className="text-4xl md:text-5xl font-bold text-foreground mb-4 glow-text tracking-tight"
                   >
                     Explore the Community
                   </motion.h1>
@@ -69,13 +69,13 @@ const Community = () => {
                       key={project.id}
                       to={`/view/${project.id}`}
                       target="_blank"
-                      className="w-full cursor-pointer bg-[#18181B]/80 backdrop-blur-xl border border-[#27272A] rounded-2xl overflow-hidden group relative transition-all duration-300 hover:-translate-y-1.5 hover:border-[#7C3AED]/60"
+                      className="w-full cursor-pointer bg-card/80 backdrop-blur-xl border border-border rounded-2xl overflow-hidden group relative transition-all duration-300 hover:-translate-y-1.5 hover:border-[#7C3AED]/60"
                     >
                       {/* DESKTOP LIKE MINI PREVIEW */}
 
                       <div
                         // onClick={() => navigate(`/projects/${project.id}`)} //This is create erorr while view and then come it show project page which is not exist in user
-                        className=" relative w-full h-40 overflow-hidden border-b border-[#27272A] bg-black"
+                        className=" relative w-full h-40 overflow-hidden border-b border-border bg-muted"
                       >
                         {project.current_code ? (
                           <iframe
@@ -85,7 +85,7 @@ const Community = () => {
                             style={{ transform: "scale(0.25)" }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                          <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
                             <p>No Preview</p>
                           </div>
                         )}
@@ -93,25 +93,25 @@ const Community = () => {
 
                       {/* Content */}
 
-                      <div className="p-4 text-white">
+                      <div className="p-4 text-foreground">
                         {/* Title + Badge */}
                         <div className="flex items-start justify-between gap-2">
                           <h2 className="text-[18px] font-semibold leading-snug line-clamp-2">
                             {project.name}
                           </h2>
 
-                          <button className="  text-[12px] px-2 py-0.5 bg-white/5 border border-white/10 rounded-full text-gray-300">
+                          <button className="  text-[12px] px-2 py-0.5 bg-foreground/5 border border-border rounded-full text-muted-foreground">
                             Website
                           </button>
                         </div>
 
                         {/* Description */}
-                        <p className="text-gray-400 mt-2 text-sm leading-relaxed line-clamp-2">
+                        <p className="text-muted-foreground mt-2 text-sm leading-relaxed line-clamp-2">
                           {project.initial_prompt}
                         </p>
 
                         <div className="flex justify-between items-center mt-5">
-                          <span className="text-[13px] text-gray-500">
+                          <span className="text-[13px] text-muted-foreground">
                             {project.createdAt &&
                               new Date(project.createdAt).toLocaleDateString()}
                             {/* DATE FIXED */}
@@ -123,7 +123,7 @@ const Community = () => {
                             {project.user?.name?.slice(0, 1) || "U"}
                           </div>
 
-                          <span className="text-xs text-gray-300 truncate">
+                          <span className="text-xs text-muted-foreground truncate">
                             {project.user?.name}
                           </span>
                         </div>
@@ -136,7 +136,7 @@ const Community = () => {
           ) : (
             <div>
               <div className="flex flex-col items-center justify-center h-[80vh]">
-                <h1 className="text-3xl font-semibold text-gray-300">
+                <h1 className="text-3xl font-semibold text-muted-foreground">
                   No projects published yet
                 </h1>
                 <div className="flex justify-center items-center">

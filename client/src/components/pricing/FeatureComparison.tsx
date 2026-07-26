@@ -3,7 +3,7 @@ import { Check, Minus } from "lucide-react";
 export const FeatureComparison = () => (
   <div className="max-w-[1000px] mx-auto px-6 mb-20">
     <div className="text-center mb-12">
-      <h2 className="text-3xl font-bold text-white mb-4">Compare Features</h2>
+      <h2 className="text-3xl font-bold text-foreground mb-4">Compare Features</h2>
       <p className="text-text-secondary">
         Detailed breakdown of what's included in each plan.
       </p>
@@ -15,13 +15,13 @@ export const FeatureComparison = () => (
             <th className="py-4 pl-4 text-text-secondary font-medium w-1/3">
               Features
             </th>
-            <th className="py-4 px-4 text-center text-white font-bold w-1/5">
+            <th className="py-4 px-4 text-center text-foreground font-bold w-1/5">
               Starter
             </th>
             <th className="py-4 px-4 text-center text-primary-light font-bold w-1/5">
               Pro
             </th>
-            <th className="py-4 pr-4 text-center text-white font-bold w-1/5">
+            <th className="py-4 pr-4 text-center text-foreground font-bold w-1/5">
               Enterprise
             </th>
           </tr>
@@ -35,29 +35,29 @@ export const FeatureComparison = () => (
               Usage
             </td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Generations per day</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Generations per day</td>
             <td className="py-4 px-4 text-center text-text-secondary">5</td>
-            <td className="py-4 px-4 text-center text-white font-bold">
+            <td className="py-4 px-4 text-center text-foreground font-bold">
               Unlimited
             </td>
-            <td className="py-4 px-4 text-center text-white">Unlimited</td>
+            <td className="py-4 px-4 text-center text-foreground">Unlimited</td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Projects</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Projects</td>
             <td className="py-4 px-4 text-center text-text-secondary">1</td>
-            <td className="py-4 px-4 text-center text-white font-bold">
+            <td className="py-4 px-4 text-center text-foreground font-bold">
               Unlimited
             </td>
-            <td className="py-4 px-4 text-center text-white">Unlimited</td>
+            <td className="py-4 px-4 text-center text-foreground">Unlimited</td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Team Members</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Team Members</td>
             <td className="py-4 px-4 text-center text-text-secondary">1</td>
-            <td className="py-4 px-4 text-center text-white font-bold">
+            <td className="py-4 px-4 text-center text-foreground font-bold">
               Up to 5
             </td>
-            <td className="py-4 px-4 text-center text-white">Unlimited</td>
+            <td className="py-4 px-4 text-center text-foreground">Unlimited</td>
           </tr>
 
           <tr className="group">
@@ -68,47 +68,47 @@ export const FeatureComparison = () => (
               Capabilities
             </td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Code Export</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Code Export</td>
             <td className="py-4 px-4 text-center text-text-secondary">
               HTML/CSS
             </td>
             <td className="py-4 px-4 text-center text-primary-light">
               <Check className="mx-auto w-5 h-5" />
             </td>
-            <td className="py-4 px-4 text-center text-white">
+            <td className="py-4 px-4 text-center text-foreground">
               <Check className="mx-auto w-5 h-5" />
             </td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Components Library</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Components Library</td>
             <td className="py-4 px-4 text-center text-text-secondary">Basic</td>
-            <td className="py-4 px-4 text-center text-white font-bold">
+            <td className="py-4 px-4 text-center text-foreground font-bold">
               Pro Access
             </td>
-            <td className="py-4 px-4 text-center text-white">Full Access</td>
+            <td className="py-4 px-4 text-center text-foreground">Full Access</td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Custom Themes</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Custom Themes</td>
             <td className="py-4 px-4 text-center text-text-secondary">
               <Minus className="mx-auto w-5 h-5 opacity-30" />
             </td>
             <td className="py-4 px-4 text-center text-primary-light">
               <Check className="mx-auto w-5 h-5" />
             </td>
-            <td className="py-4 px-4 text-center text-white">
+            <td className="py-4 px-4 text-center text-foreground">
               <Check className="mx-auto w-5 h-5" />
             </td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">API Access</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">API Access</td>
             <td className="py-4 px-4 text-center text-text-secondary">
               <Minus className="mx-auto w-5 h-5 opacity-30" />
             </td>
             <td className="py-4 px-4 text-center text-text-secondary">
               <Minus className="mx-auto w-5 h-5 opacity-30" />
             </td>
-            <td className="py-4 px-4 text-center text-white">
+            <td className="py-4 px-4 text-center text-foreground">
               <Check className="mx-auto w-5 h-5" />
             </td>
           </tr>
@@ -121,15 +121,15 @@ export const FeatureComparison = () => (
               Support
             </td>
           </tr>
-          <tr className="border-b border-border-dark/50 group hover:bg-white/5 transition-colors">
-            <td className="py-4 pl-4 text-white">Support Level</td>
+          <tr className="border-b border-border-dark/50 group hover:bg-foreground/5 transition-colors">
+            <td className="py-4 pl-4 text-foreground">Support Level</td>
             <td className="py-4 px-4 text-center text-text-secondary">
               Community
             </td>
-            <td className="py-4 px-4 text-center text-white font-bold">
+            <td className="py-4 px-4 text-center text-foreground font-bold">
               Priority Email
             </td>
-            <td className="py-4 px-4 text-center text-white">Dedicated 24/7</td>
+            <td className="py-4 px-4 text-center text-foreground">Dedicated 24/7</td>
           </tr>
         </tbody>
       </table>

@@ -26,11 +26,11 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <section className="px-6 py-24 border-t border-white/5">
+    <section className="px-6 py-24 border-t border-border/60">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <h3 className="text-3xl font-bold mb-4">Enterprise Questions</h3>
-          <p className="text-slate-400">Everything you need to know about bringing ParuAI to your organization.</p>
+          <p className="text-muted-foreground">Everything you need to know about bringing ParuAI to your organization.</p>
         </div>
         <div className="grid gap-4">
           {faqs.map((faq, index) => (
@@ -43,14 +43,14 @@ export default function FAQ() {
               className="glass-card rounded-lg overflow-hidden group"
             >
               <details className="group">
-                <summary className="flex items-center justify-between p-6 cursor-pointer list-none bg-[#131118] ">
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none bg-card ">
                   <span className="font-semibold text-lg flex items-center gap-3">
                     {faq.icon}
                     {faq.question}
                   </span>
                   <ChevronDown className="transition-transform group-open:rotate-180 size-5" />
                 </summary>
-                <div className="px-6 pb-6 text-slate-400 leading-relaxed border-t border-[#131118] pt-4">
+                <div className="px-6 pb-6 text-muted-foreground leading-relaxed border-t border-border pt-4">
                   {faq.answer}
                 </div>
               </details>

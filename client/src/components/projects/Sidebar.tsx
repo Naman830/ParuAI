@@ -113,7 +113,7 @@ const Sidebar = ({
   return (
     <div
       // Was inverted: opening the chat on mobile collapsed it to w-0.
-      className={`h-full sm:max-w-sm  bg-[#09090B] border border-[#27272A] shadow-[0_0_40px_rgba(124,58,237,0.08)] transition-all ${isMenuOpen ? "w-full" : "max-sm:w-0 max-sm:overflow-hidden sm:w-full"}`}
+      className={`h-full sm:max-w-sm  bg-background border border-border shadow-[0_0_40px_rgba(124,58,237,0.08)] transition-all ${isMenuOpen ? "w-full" : "max-sm:w-0 max-sm:overflow-hidden sm:w-full"}`}
     >
       <div className="flex flex-col h-full">
         {/* Message Container*/}
@@ -139,18 +139,18 @@ const Sidebar = ({
                     className={`flex items-end gap-3 ${isUser ? "justify-end" : "justify-start"}`}
                   >
                     {!isUser && (
-                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center shadow shrink-0">
-                        <BotIcon className="size-4 text-[#A1A1AA]" />
+                      <div className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center shadow shrink-0">
+                        <BotIcon className="size-4 text-muted-foreground" />
                       </div>
                     )}
                     <div
-                      className={`max-w-[80%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl transition-all whitespace-pre-wrap break-words ${isUser ? "bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white rounded-br-none " : "bg-[#18181B] border border-[#27272A] text-[#E4E4E7] rounded-bl-none"}`}
+                      className={`max-w-[80%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl transition-all whitespace-pre-wrap break-words ${isUser ? "bg-gradient-to-r from-[#7C3AED] to-[#4F46E5] text-white rounded-br-none " : "bg-card border border-border text-foreground rounded-bl-none"}`}
                     >
                       {msg.content}
                     </div>
                     {isUser && (
-                      <div className="w-8 h-8 rounded-xl bg-[#18181B] border border-[#27272A] flex items-center justify-center shrink-0">
-                        <UserIcon className="size-4 text-[#A1A1AA]" />
+                      <div className="w-8 h-8 rounded-xl bg-card border border-border flex items-center justify-center shrink-0">
+                        <UserIcon className="size-4 text-muted-foreground" />
                       </div>
                     )}
                   </div>
@@ -160,18 +160,18 @@ const Sidebar = ({
                 return (
                   <div
                     key={ver.id}
-                    className="w-[90%] mx-auto p-4 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-sm flex flex-col gap-3 hover:border-[#7C3AED]/40 transition-all "
+                    className="w-[90%] mx-auto p-4 rounded-2xl bg-card border border-border shadow-sm flex flex-col gap-3 hover:border-[#7C3AED]/40 transition-all "
                   >
-                    <div className="text-xs text-[#A1A1AA]">
+                    <div className="text-xs text-muted-foreground">
                       code updated <br />{" "}
-                      <span className="text-white font-medium">
+                      <span className="text-foreground font-medium">
                         {new Date(ver.timestamp).toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between">
                       {project.current_version_index === ver.id ? (
-                        <button className="px-3 py-1 text-xs rounded-md bg-[#27272A] text-[#A1A1AA]">
+                        <button className="px-3 py-1 text-xs rounded-md bg-muted text-muted-foreground">
                           Current Version
                         </button>
                       ) : (
@@ -190,7 +190,7 @@ const Sidebar = ({
                         rel="noopener noreferrer"
                         to={`/preview/${project.id}/${ver.id}`}
                       >
-                        <EyeIcon className="size-7 p-1.5 rounded-lg bg-[#27272A] hover:bg-[#7C3AED] transition" />
+                        <EyeIcon className="size-7 p-1.5 rounded-lg bg-muted hover:bg-[#7C3AED] transition" />
                       </Link>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ const Sidebar = ({
         {/* INPUT FIELD CONTAINER*/}
         <form
           onSubmit={handleRevisions}
-          className="p-3 border-t border-[#27272A] bg-[#09090B]"
+          className="p-3 border-t border-border bg-background"
         >
           <div className="relative">
             <textarea
@@ -233,7 +233,7 @@ const Sidebar = ({
               value={input}
               rows={4}
               placeholder="Decribe your website or request changes..."
-              className="w-full p-4 pr-12 rounded-2xl resize-none text-sm outline-none bg-[#18181B] border border-[#27272A] text-white placeholder-[#71717A] focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-all"
+              className="w-full p-4 pr-12 rounded-2xl resize-none text-sm outline-none bg-card border border-border text-foreground placeholder-muted-foreground focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition-all"
               disabled={isGenerating}
             />
 
