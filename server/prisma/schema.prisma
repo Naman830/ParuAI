@@ -17,8 +17,13 @@ datasource db {
 
 model User {
   id            String @id
-  email         String
+  email         String @unique
   name          String
+  // Required for Google/GitHub sign-in: both providers always populate `image`
+  // (Google's `picture` claim, GitHub's `avatar_url`) and the Prisma adapter
+  // only skips `undefined` values, so without this column every first-time
+  // social sign-in fails with FAILED_TO_CREATE_USER.
+  image         String?
   totalCreation Int    @default(0)
   credits       Int    @default(20)
   createdAt     DateTime  @default(now())
@@ -34,14 +39,27 @@ model User {
   @@map("user")
 }
 
+/// Lifecycle of a project's DOCUMENT, not of the last request.
+///
+/// A failed *revision* returns the project to `ready`, because the previous
+/// document is still intact and usable. Only a project that has never produced
+/// renderable code ends up `failed`.
+enum GenerationStatus {
+  pending
+  generating
+  ready
+  failed
+}
+
 model WebsiteProject {
-  id                    String  @id @default(uuid())
+  id                    String           @id @default(uuid())
   name                  String
   initial_prompt        String
   current_code          String?
-  current_version_index String  @default("")
+  current_version_index String           @default("")
   userId                String
-  isPublished           Boolean @default(false)
+  isPublished           Boolean          @default(false)
+  status                GenerationStatus @default(pending)
 
   // Relations
   conversation Conversation[]
@@ -50,6 +68,9 @@ model WebsiteProject {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // The boot sweep queries by status to find generations stranded by a restart.
+  @@index([status])
 }
 
 enum Role {

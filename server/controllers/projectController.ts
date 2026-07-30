@@ -1,7 +1,23 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma.js";
 import openai, { AI_MODEL } from "../configs/openai.js";
-import { extractHtml, isRenderableHtml } from "../lib/html.js";
+import {
+  createHtmlStreamTrimmer,
+  ensureDoctype,
+  extractHtml,
+  isRenderableHtml,
+} from "../lib/html.js";
+import {
+  ASSISTANT_MESSAGES,
+  enhancedPromptMessage,
+  formatRevisionHistory,
+} from "../lib/conversation.js";
+import {
+  openJob,
+  type GenerationJobHandle,
+} from "../lib/generationStream.js";
+import { streamChatCompletion } from "../lib/aiStream.js";
+import { auditHtml, buildFixInstruction } from "../lib/audit.js";
 
 const REVISION_COST = 5;
 
@@ -14,10 +30,19 @@ export const makeRevision = async (
   // Only refund if we actually charged; the old code refunded on *every* error,
   // including "unauthorized", where userId is undefined and the update throws.
   let charged = false;
+  // Lifetime mirrors `charged` exactly, which is why no early return needs to
+  // finish it. The finally block is the backstop.
+  let job: GenerationJobHandle | null = null;
 
   try {
     const { projectId } = req.params;
     const { message } = req.body;
+    // Opt-out of the prompt enhancer. The enhancer is told to return "1-2
+    // sentences", which is right for vague human prose but destroys an already
+    // precise machine-generated instruction — the audit's "Fix with AI" sends a
+    // numbered list of markup fixes and needs every item to survive. Defaults to
+    // true so the Sidebar chat behaves exactly as before.
+    const skipEnhance = req.body?.enhance === false;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized User" });
@@ -61,6 +86,15 @@ export const makeRevision = async (
 
     const prompt = message.trim();
 
+    // Read the history BEFORE writing the new user row, or the current prompt
+    // shows up twice — once as history and once as the request.
+    const priorTurns = await prisma.conversation.findMany({
+      where: { projectId },
+      orderBy: { timestamp: "asc" },
+      select: { role: true, content: true },
+    });
+    const history = formatRevisionHistory(priorTurns);
+
     await prisma.conversation.create({
       data: {
         role: "user",
@@ -75,13 +109,24 @@ export const makeRevision = async (
     });
     charged = true;
 
-    // Enhance user prompt
-    const promptEnhanceResponse = await openai.chat.completions.create({
-      model: AI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: `
+    job = openJob(projectId, "revision");
+    await prisma.websiteProject.update({
+      where: { id: projectId },
+      data: { status: "generating" },
+    });
+
+    // Enhance user prompt. Skipped entirely for machine-generated instructions,
+    // which also removes one 37-72s call with a ~1/3 failure rate from that flow.
+    let enhancedPrompt = prompt;
+
+    if (!skipEnhance) {
+      job.setPhase("enhancing");
+      const promptEnhanceResponse = await openai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `
 You are a prompt enhancement specialist. The user wants to make changes to their website. Enhance their request to be more specific and actionable for a web developer.
 
     Enhance this by:
@@ -90,38 +135,46 @@ You are a prompt enhancement specialist. The user wants to make changes to their
     3. Clarifying the desired outcome
     4. Using clear technical terms
 
+Earlier requests are provided for context — resolve pronouns and relative words ("it", "that", "darker", "bigger") against them, and describe the change in absolute terms.
+
 Return ONLY the enhanced request, nothing else. Keep it concise (1-2 sentences).`,
-        },
-        {
-          role: "user",
-          content: `User's request: "${prompt}"`,
-        },
-      ],
-    });
+          },
+          {
+            role: "user",
+            // Without the history the model has no idea what "it" refers to, so
+            // "make it blue" then "actually darker" resolved against nothing.
+            content: history
+              ? `${history}\n\nUser's new request: "${prompt}"`
+              : `User's request: "${prompt}"`,
+          },
+        ],
+      });
 
-    const enhancedPrompt =
-      promptEnhanceResponse.choices[0]?.message?.content?.trim() || prompt;
+      enhancedPrompt =
+        promptEnhanceResponse.choices[0]?.message?.content?.trim() || prompt;
+
+      await prisma.conversation.create({
+        data: {
+          role: "assistant",
+          content: enhancedPromptMessage(enhancedPrompt),
+          projectId,
+        },
+      });
+    }
 
     await prisma.conversation.create({
       data: {
         role: "assistant",
-        content: `I've enhanced your prompt to: "${enhancedPrompt}"`,
+        content: ASSISTANT_MESSAGES.REVISING,
         projectId,
       },
     });
 
-    await prisma.conversation.create({
-      data: {
-        role: "assistant",
-        content: `Now making changes to your website...`,
-        projectId,
-      },
-    });
-
-    // GERNATE WEBSITE CODE
-    const codeGenerationResponse = await openai.chat.completions.create({
-      model: AI_MODEL,
-      messages: [
+    // GERNATE WEBSITE CODE — streamed, so the user watches the rewrite happen.
+    job.setPhase("generating");
+    const trim = createHtmlStreamTrimmer();
+    const raw = await streamChatCompletion(
+      [
         {
           role: "system",
           content: `
@@ -144,20 +197,25 @@ You are an expert web developer.
         },
         {
           role: "user",
-          content: `Here is the current Website code: "${currentProject.current_code}" The user want this change: "${enhancedPrompt}"`,
+          // The original request is passed through alongside the enhanced one:
+          // the enhancer is lossy by design (it is told to return 1-2 sentences),
+          // and previously the generator only ever saw its output.
+          content: `Here is the current Website code: "${currentProject.current_code}" The user's request: "${prompt}" Interpreted as: "${enhancedPrompt}"`,
         },
       ],
-    });
+      (piece) => job?.push(trim(piece)),
+    );
 
     // Revisions previously skipped the preamble slicing that createUserProject
     // does, so model chatter could be persisted as the live document.
-    const code = extractHtml(codeGenerationResponse.choices[0]?.message?.content);
+    job.setPhase("saving");
+    const code = extractHtml(raw);
 
     if (!isRenderableHtml(code)) {
       await prisma.conversation.create({
         data: {
           role: "assistant",
-          content: "Unable to generate the code, please try again",
+          content: ASSISTANT_MESSAGES.UNUSABLE_OUTPUT,
           projectId,
         },
       });
@@ -168,11 +226,20 @@ You are an expert web developer.
       });
       charged = false;
 
+      // Back to `ready`, NOT `failed`: the previous document is still intact and
+      // usable. Marking it failed would make the boot sweep refund again and
+      // strand a working project.
+      await prisma.websiteProject.update({
+        where: { id: projectId },
+        data: { status: "ready" },
+      });
+      job.finish("failed", ASSISTANT_MESSAGES.UNUSABLE_OUTPUT);
+
       // The old code returned here without ever responding, leaving the client
       // spinner running until the request timed out.
       return res
         .status(502)
-        .json({ message: "Unable to generate the code, please try again" });
+        .json({ message: ASSISTANT_MESSAGES.UNUSABLE_OUTPUT });
     }
 
     const version = await prisma.version.create({
@@ -186,7 +253,7 @@ You are an expert web developer.
     await prisma.conversation.create({
       data: {
         role: "assistant",
-        content: "I've made the changes to your website! You can now preview it",
+        content: ASSISTANT_MESSAGES.REVISED,
         projectId,
       },
     });
@@ -196,10 +263,12 @@ You are an expert web developer.
       data: {
         current_code: code,
         current_version_index: version.id,
+        status: "ready",
       },
     });
 
     res.json({ message: "Changes made successfully" });
+    job.finish("ready");
   } catch (error: any) {
     if (charged && userId) {
       await prisma.user
@@ -212,10 +281,25 @@ You are an expert web developer.
         );
     }
 
+    // The document is untouched by a failed revision, so it stays usable.
+    await prisma.websiteProject
+      .updateMany({
+        where: { id: req.params.projectId, status: "generating" },
+        data: { status: "ready" },
+      })
+      .catch((statusError: any) =>
+        console.log("Status reset failed:", statusError.code || statusError.message),
+      );
+
     console.log(error.code || error.message);
     if (!res.headersSent) {
       return res.status(500).json({ message: error.message });
     }
+  } finally {
+    // Leak-proof backstop. Safe precisely because finish() is idempotent: it
+    // no-ops on every path that already finished, and guarantees a channel can
+    // never be orphaned if someone later adds a new early return.
+    job?.finish("failed", "Generation ended unexpectedly");
   }
 };
 
@@ -259,11 +343,15 @@ export const rollbackToVersion = async (
       },
     });
 
+    // From the catalog, not a literal: selectRevisionHistory() finds the most
+    // recent rollback by matching this exact string and discards everything at
+    // or before it, because after a rollback the live document is the older
+    // snapshot and the requests that produced the abandoned versions no longer
+    // describe it. A reworded literal here would silently break that barrier.
     await prisma.conversation.create({
       data: {
         role: "assistant",
-        content:
-          "I've rolled back your website to selected version. You can now preview it",
+        content: ASSISTANT_MESSAGES.ROLLED_BACK,
         projectId,
       },
     });
@@ -400,6 +488,62 @@ export const getProjectById = async (
   }
 };
 
+/**
+ * SEO + accessibility audit of the project's saved document.
+ *
+ * GET, not POST: it is a pure, idempotent read of current_code with no body and
+ * no side effects, matching GET /api/project/preview/:projectId. It audits
+ * exactly the document that gets published and downloaded, which is the question
+ * the user is actually asking.
+ *
+ * FREE — no credits. There is no AI call and no external network here, just
+ * regex work over a ~40KB string, and charging would make the
+ * audit -> fix -> re-audit loop punitive. The fix itself still costs 5 via the
+ * existing revision endpoint.
+ */
+export const auditProject = async (
+  req: Request<{ projectId: string }>,
+  res: Response,
+) => {
+  try {
+    const userId = req.userId;
+    const { projectId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const project = await prisma.websiteProject.findFirst({
+      where: { id: projectId, userId },
+      select: { current_code: true },
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Same status and wording makeRevision uses for the same condition.
+    if (!project.current_code) {
+      return res
+        .status(409)
+        .json({ message: "Wait for the website to finish generating" });
+    }
+
+    const report = auditHtml(project.current_code);
+
+    res.json({
+      report,
+      // Composed server-side so the fix wording lives in vitest-tested code and
+      // the client never has to re-derive it from a mirrored copy of the checks.
+      fixPrompt: buildFixInstruction(report),
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.log(error.code || error.message);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 // SAVE PROJECT CODE
 export const saveProjectCode = async (
   req: Request<{ projectId: string }>,
@@ -427,16 +571,33 @@ export const saveProjectCode = async (
       return res.status(404).json({ message: "Project not found" });
     }
 
+    // This write path used to persist req.body.code verbatim, which is the one
+    // place in the app that bypassed extractHtml/isRenderableHtml. That was
+    // survivable while the only caller was the preview iframe, but the code
+    // editor lets a user type anything — and saving "hello" as current_code
+    // breaks preview, publish, /view/:id and download all at once.
+    //
+    // ensureDoctype is what stops the saved document from regressing into
+    // quirks mode: getCode() serializes documentElement.outerHTML, which never
+    // carries a doctype.
+    const cleaned = ensureDoctype(extractHtml(code));
+
+    if (!isRenderableHtml(cleaned)) {
+      return res
+        .status(400)
+        .json({ message: "That doesn't look like a valid HTML document" });
+    }
+
     // A manual save is a new snapshot, not a detachment: the old code set
     // current_version_index to "" which orphaned the project from every Version
     // and made the sidebar lose its "Current Version" marker.
     const version = await prisma.version.create({
-      data: { code, description: "manual save", projectId },
+      data: { code: cleaned, description: "manual save", projectId },
     });
 
     await prisma.websiteProject.update({
       where: { id: projectId },
-      data: { current_code: code, current_version_index: version.id },
+      data: { current_code: cleaned, current_version_index: version.id },
     });
 
     // Was `messsage`, so the client toasted "undefined".

@@ -16,6 +16,8 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import userRouter from "./routes/userRoutes.js";
 import projectRouter from "./routes/projectRoutes.js";
+import publicRouter from "./routes/publicRoutes.js";
+import { sweepStaleGenerations } from "./controllers/userController.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -50,6 +52,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 app.use("/api/user", userRouter);
 app.use("/api/project", projectRouter);
+app.use("/api/public", publicRouter);
 
 // Unknown API routes returned Express' HTML error page, which broke the
 // client's `error.response.data.message` handling.
@@ -66,4 +69,19 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
+
+  // Repair any generation that died with the previous process. Without this a
+  // restart mid-generation strands the project at current_code: null with no
+  // marker and no refund, and the client polls it forever.
+  //
+  // ASSUMES A SINGLE INSTANCE, which is what Render's free plan runs. With two
+  // instances a booting one would see the other's live generations as stranded;
+  // the compare-and-swap in sweepStaleGenerations keeps the refund at-most-once
+  // even then, but set GENERATION_SWEEP_ON_BOOT=false before scaling out.
+  //
+  // Inside the listen callback rather than before it, so the sweep's DB
+  // round-trips cannot delay Render's health check on /.
+  if (process.env.GENERATION_SWEEP_ON_BOOT !== "false") {
+    void sweepStaleGenerations();
+  }
 });

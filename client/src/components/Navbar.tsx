@@ -74,7 +74,7 @@ export const Navbar = () => {
           {!session?.user ? (
 
             <button
-            onClick={() => navigate("/auth/signin")}
+            onClick={() => navigate("/auth/sign-in")}
             className="hidden md:flex items-center justify-center rounded-full h-10 px-6 bg-primary text-white text-sm font-semibold transition-all duration-300 shadow-[0_0_12px_rgba(91,19,236,0.25)] hover:shadow-[0_0_18px_rgba(91,19,236,0.35)] hover:-translate-y-[1px] active:translate-y-0"
           >
             Get Started
@@ -153,7 +153,7 @@ export const Navbar = () => {
                     className="mt-4"
                   >
                     <Link
-                      to="/auth/signin"
+                      to="/auth/sign-in"
                       onClick={() => setIsOpen(false)}
                       className="rounded-full h-10 px-6 flex items-center justify-center bg-primary text-white text-sm font-semibold shadow-[0_0_12px_rgba(91,19,236,0.25)] hover:shadow-[0_0_18px_rgba(91,19,236,0.35)] active:scale-95 transition-all duration-300"
                     >

@@ -4,8 +4,10 @@ import type {
   ElementUpdate,
   Project,
   SelectedElement,
+  StreamState,
 } from "../../types";
 import { iframeScript } from "../../assets/assets";
+import { ensureDoctype } from "@/lib/htmlDoc";
 import EditorPanel from "./EditorPanel";
 import LoaderSteps from "./LoaderSteps";
 
@@ -14,18 +16,48 @@ interface ProjectPreviewProps {
   isGenerating: boolean;
   device?: DeviceType;
   showEditorPanel?: boolean;
+  /**
+   * Renders this instead of project.current_code — the applied code-editor
+   * buffer. Changing it reloads the iframe, so the parent only sets it on an
+   * explicit apply, never per keystroke.
+   */
+  sourceCode?: string | null;
+  /** Live partial HTML from the SSE stream. Read-only, never injected, never saved. */
+  streamingCode?: string;
+  streamProgress?: StreamState;
 }
 
 export interface ProjectPreviewRef {
   getCode: () => string | undefined;
+  clearSelection: () => void;
+  hasVisualEdits: () => boolean;
 }
+
+const EMPTY_PROGRESS: StreamState = {
+  text: "",
+  phase: "queued",
+  bytes: 0,
+  truncated: false,
+  connected: false,
+};
 
 const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
   (
-    { project, device = "desktop", isGenerating, showEditorPanel = true },
+    {
+      project,
+      device = "desktop",
+      isGenerating,
+      showEditorPanel = true,
+      sourceCode,
+      streamingCode,
+      streamProgress,
+    },
     ref,
   ) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const streamFrameRef = useRef<HTMLIFrameElement>(null);
+    const writtenRef = useRef(0);
+    const visualEditsRef = useRef(false);
     const [selectedElement, setSelectedElement] =
       useState<SelectedElement | null>(null);
 
@@ -35,14 +67,41 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
       desktop: "w-full",
     };
 
+    const html = sourceCode ?? project.current_code;
+    const isStreaming = Boolean(streamingCode);
+    const progress = streamProgress ?? EMPTY_PROGRESS;
+
+    const clearSelection = () => {
+      setSelectedElement(null);
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "CLEAR_SELECTION_REQUEST" },
+          "*",
+        );
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       getCode: () => {
+        // Never serialize a partial document. Branch 1 wins while streaming so
+        // iframeRef is null anyway, but state the intent so a future refactor
+        // cannot quietly persist half a page.
+        if (isStreaming || !html) return undefined;
+
         const doc = iframeRef.current?.contentDocument;
         if (!doc) return undefined;
 
-        // 1. Remove our selection class / attributes / outline from all elements
+        // Strip on a CLONE, not the live document. This used to mutate the real
+        // iframe DOM, so after one getCode() the injected #ai-preview-script was
+        // gone and click-to-select was dead until srcDoc changed. Save happened
+        // to heal it (the refetch reloads the iframe); Download did not. The
+        // Code tab calls this on every switch, so it had to stop being
+        // destructive. outerHTML on a detached element is valid — only the
+        // setter requires a parent.
+        const root = doc.documentElement.cloneNode(true) as HTMLElement;
 
-        doc
+        // 1. Remove our selection class / attributes / outline from all elements
+        root
           .querySelectorAll(".ai-selected-element, [data-ai-selected]")
           .forEach((el) => {
             el.classList.remove("ai-selected-element");
@@ -50,23 +109,29 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
             (el as HTMLElement).style.outline = "";
           });
 
-        // 2. Remove injected style + script from the document
-        const previewStyle = doc.getElementById("ai-preview-style");
+        // 2. Remove injected style + script from the clone
+        const previewStyle = root.querySelector("#ai-preview-style");
         if (previewStyle) previewStyle.remove();
 
-        const previewScript = doc.getElementById("ai-preview-script");
+        const previewScript = root.querySelector("#ai-preview-script");
         if (previewScript) previewScript.remove();
 
-        // 3. Serialize clean Html
-        const html = doc.documentElement.outerHTML;
-        return html;
+        // 3. Serialize clean Html. outerHTML never includes the doctype, and
+        // persisting it without one puts every later render into quirks mode.
+        return ensureDoctype(root.outerHTML);
       },
+      clearSelection,
+      hasVisualEdits: () => visualEditsRef.current,
     }));
 
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
         // The preview runs arbitrary generated JS, and any page can postMessage
         // here — only accept messages from our own iframe.
+        //
+        // Do NOT widen this to also accept the streaming frame: while streaming,
+        // iframeRef.current is null so every message is rejected, which is
+        // exactly right. A half-built document must not drive the editor.
         if (event.source !== iframeRef.current?.contentWindow) return;
 
         if (event.data?.type === "ELEMENT_SELECTED") {
@@ -79,8 +144,50 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
       return () => window.removeEventListener("message", handleMessage);
     }, []);
 
+    // A new document means any previous in-DOM visual edits are gone with it.
+    // Writing a ref inside an effect is fine; this is not setState.
+    useEffect(() => {
+      visualEditsRef.current = false;
+    }, [html]);
+
+    /**
+     * Feed the streaming document incrementally.
+     *
+     * document.write into an about:blank frame rather than re-assigning srcDoc:
+     * srcDoc is a full document reload on every update, which makes the Tailwind
+     * CDN rescan and the frame strobe several times a second. Incremental writes
+     * are exactly what the HTML parser does for a real network stream, so partial
+     * tags and a missing </body> are expected input and the page paints
+     * progressively with no flashing.
+     *
+     * Accepted limitation: we never call doc.close(), so readyState stays
+     * "loading" and DOMContentLoaded/window.onload never fire in the LIVE
+     * preview. Inline scripts still run as their closing tag is parsed, and the
+     * committed iframe (branch 2) is unaffected.
+     */
+    useEffect(() => {
+      if (!streamingCode) {
+        writtenRef.current = 0;
+        return;
+      }
+      const doc = streamFrameRef.current?.contentDocument;
+      if (!doc) return;
+
+      // A snapshot replaced the buffer (reconnect, or a new revision), so the
+      // document must be re-parsed from the start.
+      if (streamingCode.length < writtenRef.current) writtenRef.current = 0;
+      if (writtenRef.current === 0) doc.open();
+
+      const pending = streamingCode.slice(writtenRef.current);
+      if (pending) {
+        doc.write(pending);
+        writtenRef.current = streamingCode.length;
+      }
+    }, [streamingCode]);
+
     const handleUpdate = (updates: ElementUpdate) => {
       if (iframeRef.current?.contentWindow) {
+        visualEditsRef.current = true;
         iframeRef.current.contentWindow.postMessage(
           {
             type: "UPDATE_ELEMENT",
@@ -91,50 +198,70 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
       }
     };
 
-    const injectPreview = (html: string) => {
-      if (!html) return "";
-      if (!showEditorPanel) return html;
+    const injectPreview = (source: string) => {
+      if (!source) return "";
+      if (!showEditorPanel) return source;
 
-      if (html.includes("</body>")) {
-        return html.replace("</body>", iframeScript + "</body>");
+      // A hand edit could delete </body>; browsers reparent a trailing script
+      // into <body> anyway, so appending still works.
+      if (source.includes("</body>")) {
+        return source.replace("</body>", iframeScript + "</body>");
       } else {
-        return html + iframeScript;
+        return source + iframeScript;
       }
     };
 
     return (
       <div className="relative h-full flex-1 bg-background  border border-border overflow-hidden">
-        {project.current_code ? (
+        {isStreaming ? (
+          <>
+            <iframe
+              ref={streamFrameRef}
+              title="Website preview (generating)"
+              // No src/srcDoc: the about:blank document is fed incrementally by
+              // the effect above. Same sandbox string as the committed preview —
+              // allow-same-origin is what makes contentDocument reachable, and
+              // withholding allow-top-navigation stops a half-built page from
+              // navigating the builder away from itself.
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+              className={`h-full max-sm:w-full ${resolutions[device] || resolutions.desktop} mx-auto`}
+            />
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-xl border border-border text-xs text-muted-foreground shadow-[var(--panel-shadow)]">
+              <span className="size-1.5 rounded-full bg-[#7C3AED] animate-pulse" />
+              Building your page — {(progress.bytes / 1024).toFixed(1)} KB
+            </div>
+          </>
+        ) : html ? (
           <>
             <iframe
               ref={iframeRef}
               title="Website preview"
-              srcDoc={injectPreview(project.current_code)}
+              srcDoc={injectPreview(html)}
               // allow-same-origin is required: getCode() reads contentDocument.
               // Withholding allow-top-navigation stops generated pages from
               // navigating the builder away from itself.
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
               className={`h-full max-sm:w-full ${resolutions[device] || resolutions.desktop} mx-auto transition-all`}
+              // Drops a selection pointing at an element from the previous
+              // document. An event handler, deliberately: doing this in an
+              // effect would trip react-hooks/set-state-in-effect.
+              onLoad={() => setSelectedElement(null)}
             />
 
             {showEditorPanel && selectedElement && (
               <EditorPanel
                 selectedElement={selectedElement}
                 onUpdate={handleUpdate}
-                onClose={() => {
-                  setSelectedElement(null);
-                  if (iframeRef.current?.contentWindow) {
-                    iframeRef.current.contentWindow.postMessage(
-                      { type: "CLEAR_SELECTION_REQUEST" },
-                      "*",
-                    );
-                  }
-                }}
+                onClose={clearSelection}
               />
             )}
           </>
         ) : isGenerating ? (
-          <LoaderSteps />
+          <LoaderSteps
+            phase={progress.phase}
+            bytes={progress.bytes}
+            connected={progress.connected}
+          />
         ) : (
           // Previously rendered nothing at all, so a failed generation left a
           // silent black rectangle with no explanation.

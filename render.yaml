@@ -45,6 +45,33 @@ services:
       - key: TRUSTED_ORIGINS
         sync: false
 
+      # Public origin of the client. Builds the password-reset link, the
+      # email-verification callback and the OAuth error redirect, so all three
+      # land on Vercel rather than on this API. No trailing slash, and it must
+      # also appear in TRUSTED_ORIGINS or better-auth's originCheck rejects the
+      # verification callback with 403 INVALID_CALLBACK_URL.
+      - key: CLIENT_URL
+        sync: false
+
+      # Google + GitHub OAuth. Set BOTH keys for a provider or NEITHER; an
+      # unconfigured provider is simply not registered and the client renders no
+      # button for it (GET /api/public/config reports the live list, so turning a
+      # provider on is a restart here, not a Vercel redeploy).
+      # Register the callback against THIS service's URL:
+      #   https://paruai-api.onrender.com/api/auth/callback/google
+      #   https://paruai-api.onrender.com/api/auth/callback/github
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      - key: GITHUB_CLIENT_ID
+        sync: false
+
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+
       # Better Auth Dash key (ba_…) from https://dash.better-auth.com — read by
       # the dash() plugin in lib/auth.ts. Without it the server still boots and
       # auth still works; only the dashboard connection is inert.
@@ -78,3 +105,14 @@ services:
 
       - key: AI_MAX_RETRIES
         value: "2"
+
+      # Inactivity bound on a streaming completion, so a provider that stops
+      # sending tokens mid-page still reaches the refund path.
+      - key: AI_STREAM_IDLE_TIMEOUT_MS
+        value: "90000"
+
+      # Repairs generations stranded by a restart (refund + failed status).
+      # Correct only for a SINGLE instance, which is what plan: free runs — set
+      # to "false" before scaling out.
+      - key: GENERATION_SWEEP_ON_BOOT
+        value: "true"

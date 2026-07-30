@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { extractHtml, isRenderableHtml } from "./html.js";
+import {
+  createHtmlStreamTrimmer,
+  ensureDoctype,
+  extractHtml,
+  isRenderableHtml,
+} from "./html.js";
 
 describe("extractHtml", () => {
   it("returns empty string for null/undefined/empty input", () => {
@@ -61,5 +66,87 @@ describe("isRenderableHtml", () => {
   it("returns true when an <html> tag is present", () => {
     expect(isRenderableHtml("<html><body>hi</body></html>")).toBe(true);
     expect(isRenderableHtml("<html lang=\"en\"><body>hi</body></html>")).toBe(true);
+  });
+});
+
+describe("ensureDoctype", () => {
+  it("prefixes a doctype when none is present", () => {
+    expect(ensureDoctype("<html><body>hi</body></html>")).toBe(
+      "<!DOCTYPE html>\n<html><body>hi</body></html>",
+    );
+  });
+
+  it("is idempotent when a doctype is already present", () => {
+    const doc = "<!DOCTYPE html><html></html>";
+    expect(ensureDoctype(doc)).toBe(doc);
+    expect(ensureDoctype(ensureDoctype(doc))).toBe(doc);
+  });
+
+  it("recognises a lower-case doctype and does not double-prefix", () => {
+    const doc = "<!doctype html><html></html>";
+    expect(ensureDoctype(doc)).toBe(doc);
+  });
+
+  it("recognises a doctype after leading whitespace", () => {
+    const doc = "\n  <!DOCTYPE html><html></html>";
+    expect(ensureDoctype(doc)).toBe(doc);
+  });
+
+  it("prefixes an empty string", () => {
+    expect(ensureDoctype("")).toBe("<!DOCTYPE html>\n");
+  });
+
+  it("composes with extractHtml to make an <html>-only document renderable", () => {
+    const result = ensureDoctype(extractHtml("Sure:\n<html><body>hi</body></html>"));
+    expect(result).toBe("<!DOCTYPE html>\n<html><body>hi</body></html>");
+    expect(isRenderableHtml(result)).toBe(true);
+  });
+});
+
+describe("createHtmlStreamTrimmer", () => {
+  it("suppresses a preamble before <!DOCTYPE", () => {
+    const trim = createHtmlStreamTrimmer();
+    expect(trim("Here is your code:\n")).toBe("");
+    expect(trim("<!DOCTYPE html><html>")).toBe("<!DOCTYPE html><html>");
+  });
+
+  it("finds a doctype split across chunk boundaries", () => {
+    const trim = createHtmlStreamTrimmer();
+    expect(trim("```html\n<!doc")).toBe("");
+    expect(trim("type html><html>")).toBe("<!doctype html><html>");
+  });
+
+  it("strips a leading markdown fence", () => {
+    const trim = createHtmlStreamTrimmer();
+    expect(trim("```html\n<!DOCTYPE html>")).toBe("<!DOCTYPE html>");
+  });
+
+  it("falls back to <html> when there is no doctype", () => {
+    const trim = createHtmlStreamTrimmer();
+    expect(trim("blah blah <html lang=\"en\">")).toBe("<html lang=\"en\">");
+  });
+
+  it("passes everything through unchanged once opened", () => {
+    const trim = createHtmlStreamTrimmer();
+    trim("<!DOCTYPE html>");
+    expect(trim("<body>")).toBe("<body>");
+    expect(trim("plain text with no tags")).toBe("plain text with no tags");
+    expect(trim("")).toBe("");
+  });
+
+  it("flushes the buffered prefix once the budget is exceeded", () => {
+    const trim = createHtmlStreamTrimmer(16);
+    expect(trim("0123456789")).toBe("");
+    // Crosses the 16-char budget with no document start: flush what we have.
+    expect(trim("abcdefghij")).toBe("0123456789abcdefghij");
+    expect(trim("more")).toBe("more");
+  });
+
+  it("does not treat a partial tag name as the document start", () => {
+    const trim = createHtmlStreamTrimmer();
+    // `<htm` and `<html` without a following space or `>` must not match.
+    expect(trim("<htm")).toBe("");
+    expect(trim("l")).toBe("");
+    expect(trim(">")).toBe("<html>");
   });
 });

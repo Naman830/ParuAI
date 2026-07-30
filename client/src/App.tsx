@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/sonner"
 import AuthPage from "./pages/auth/AuthPage";
 import Settings from "./pages/Settings";
 import ContactForm from "./pages/Contact";
+import { AuthStatusToasts } from "@/components/AuthStatusToasts";
 
 const App = () => {
   const { pathname } = useLocation();
@@ -28,6 +29,8 @@ const App = () => {
   return (
     <div>
        <Toaster />
+      {/* Above <Routes> so it fires on whatever route an auth redirect lands on. */}
+      <AuthStatusToasts />
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
