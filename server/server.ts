@@ -64,7 +64,17 @@ app.use("/api", (_req: Request, res: Response) => {
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error("REQUEST ERROR:", err?.stack || err);
   if (res.headersSent) return;
-  res.status(500).json({ message: err?.message || "Internal Server Error" });
+
+  // body-parser tags client errors with a 4xx status: 400 for malformed JSON
+  // (err.type "entity.parse.failed") and 413 for a body over the 50mb limit.
+  // Honour it so bad client input is not reported as 500 — and never surface
+  // internal error text on a genuine server fault, which would leak stack/DB
+  // details to the caller.
+  const status = Number(err?.status ?? err?.statusCode) || 500;
+  if (status >= 400 && status < 500) {
+    return res.status(status).json({ message: err?.message || "Bad Request" });
+  }
+  res.status(500).json({ message: "Internal Server Error" });
 });
 
 app.listen(port, () => {
