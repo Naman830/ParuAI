@@ -355,7 +355,7 @@ const CHECKS: readonly CheckDefinition[] = [
       if (offenders.length === 0) return PASS;
       return {
         status: "fail",
-        detail: `${count(offenders.length, "<img> tag")} of ${images.length} have no alt attribute (alt="" is correct for purely decorative images).`,
+        detail: `${offenders.length} of ${images.length} <img> tags have no alt attribute (alt="" is correct for purely decorative images).`,
         samples: samplesOf(doc, offenders),
         fix: `Add a descriptive alt attribute to every <img> (${offenders.length} missing); use alt="" only for decorative images.`,
       };
@@ -377,7 +377,7 @@ const CHECKS: readonly CheckDefinition[] = [
       if (offenders.length === 0) return PASS;
       return {
         status: "fail",
-        detail: `${count(offenders.length, "link")} of ${links.length} have no discernible text, aria-label, title or labelled icon.`,
+        detail: `${offenders.length} of ${links.length} links have no discernible text, aria-label, title or labelled icon.`,
         samples: samplesOf(doc, offenders),
         fix: `Give every link discernible text or an aria-label (${offenders.length} without either).`,
       };
@@ -409,7 +409,7 @@ const CHECKS: readonly CheckDefinition[] = [
 
       return {
         status: "fail",
-        detail: `${count(offenders.length, "button")} of ${buttons.length + inputButtons.length} have no accessible name.`,
+        detail: `${offenders.length} of ${buttons.length + inputButtons.length} buttons have no accessible name.`,
         samples: samplesOf(doc, offenders),
         fix: `Give every button an accessible name — visible text, value or aria-label (${offenders.length} without one).`,
       };
@@ -448,7 +448,7 @@ const CHECKS: readonly CheckDefinition[] = [
 
       return {
         status: "fail",
-        detail: `${count(offenders.length, "form control")} of ${controls.length} have no label, aria-label or wrapping <label> (a placeholder is not a label).`,
+        detail: `${offenders.length} of ${controls.length} form controls have no label, aria-label or wrapping <label> (a placeholder is not a label).`,
         samples: samplesOf(doc, offenders),
         fix: `Label every form control with <label for="..."> or aria-label (${offenders.length} unlabelled); placeholder text does not count.`,
       };
@@ -534,7 +534,7 @@ const CHECKS: readonly CheckDefinition[] = [
         .map(([id, n]) => `"${id}" (×${n})`);
       return {
         status: "fail",
-        detail: `${count(duplicates.length, "id value")} of ${ids.length} appear more than once: ${listed.join(", ")}.`,
+        detail: `${duplicates.length} of ${ids.length} id values appear more than once: ${listed.join(", ")}.`,
         samples: duplicates
           .slice(0, MAX_SAMPLES)
           .map(([id, n]) => snippet(`id="${id}" used ${n} times`)),
@@ -591,7 +591,7 @@ const CHECKS: readonly CheckDefinition[] = [
         detail:
           doc.descriptionTags.length === 0
             ? 'There is no <meta name="description"> tag.'
-            : `${count(doc.descriptionTags.length, '<meta name="description"> tag')} present, all with empty content.`,
+            : 'A <meta name="description"> tag is present but its content is empty.',
         samples: samplesOf(doc, doc.descriptionTags),
         fix: 'Add <meta name="description" content="..."> with a 50-160 character summary of the page.',
       };
@@ -776,7 +776,7 @@ const CHECKS: readonly CheckDefinition[] = [
       if (offenders.length === 0) return PASS;
       return {
         status: "fail",
-        detail: `${count(offenders.length, 'target="_blank" link')} of ${blankLinks.length} have no rel="noopener"/"noreferrer".`,
+        detail: `${offenders.length} of ${blankLinks.length} target="_blank" links have no rel="noopener" or rel="noreferrer".`,
         samples: samplesOf(doc, offenders),
         fix: `Add rel="noopener noreferrer" to the ${count(offenders.length, 'target="_blank" link')}.`,
       };
