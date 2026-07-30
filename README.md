@@ -44,11 +44,12 @@ and host it anywhere.
 | Step | What happens |
 |:---:|---|
 | 1️⃣ | **Describe it** — type a prompt on the home page, e.g. *"a landing page for a coffee subscription box"*. |
-| 2️⃣ | **It gets built** — the server calls an LLM twice: once to expand your prompt into a fuller spec, once to generate the actual HTML. Takes ~40 seconds to a few minutes depending on the model. |
-| 3️⃣ | **Preview it** — the generated page renders live in a sandboxed iframe. |
-| 4️⃣ | **Edit it** — click any element to select it, then change its text, color, or spacing from the side panel. No code required. |
-| 5️⃣ | **Iterate by chat** — ask for changes ("make the header sticky", "swap the color scheme to green") and a new version is generated using the current page as context. |
-| 6️⃣ | **Roll back, publish, or download** — every revision is saved as a version you can restore. Publish to the community gallery, or download a plain `index.html` you can host anywhere. |
+| 2️⃣ | **Watch it get built** — the server calls an LLM twice: once to expand your prompt into a fuller spec, once to generate the actual HTML. The second call is **streamed to your browser**, so you watch the page assemble itself instead of staring at a spinner. Takes ~40 seconds to a few minutes depending on the model. |
+| 3️⃣ | **Preview it** — the finished page renders live in a sandboxed iframe. |
+| 4️⃣ | **Edit it two ways** — click any element to change its text, colour or spacing from the side panel, or switch to the **Code tab** and hand-edit the HTML directly with syntax highlighting, line numbers and search. |
+| 5️⃣ | **Iterate by chat** — ask for changes ("make the header sticky", "swap the colour scheme to green") and a new version is generated using the current page *and your earlier requests* as context, so follow-ups like *"actually darker"* resolve correctly. |
+| 6️⃣ | **Audit it** — a built-in SEO + accessibility check scores the page out of 100 across 19 rules and lists exactly what is wrong. One click sends the fix list back to the model. |
+| 7️⃣ | **Roll back, publish, or download** — every revision is saved as a version you can restore. Publish to the community gallery, or download a plain `index.html` you can host anywhere. |
 
 ---
 
@@ -123,9 +124,13 @@ All server config lives in `server/.env` (see `server/.env.example` for full com
 | ✅ `TRUSTED_ORIGINS` | Comma-separated frontend origin(s), e.g. `http://localhost:5173` |
 | 🧠 `AI_API_KEY` | Your OpenRouter API key |
 | 🤖 `AI_MODEL` | Generation model — defaults to a free OpenRouter model |
-| ✉️ `BREVO_API_KEY` | Brevo API key (`xkeysib-…`) — sends password-reset emails over HTTPS |
-| 📮 `SMTP_FROM` | The "From" address on reset mail — must be a **verified sender** in Brevo |
-| 🔗 `CLIENT_URL` | Optional — frontend origin used to build the reset-password link (defaults to the first `TRUSTED_ORIGINS` entry) |
+| ✉️ `BREVO_API_KEY` | Brevo API key (`xkeysib-…`) — sends password-reset **and email-verification** mail over HTTPS |
+| 📮 `SMTP_FROM` | The "From" address on outgoing mail — must be a **verified sender** in Brevo |
+| 🔗 `CLIENT_URL` | Frontend origin used to build the reset-password link, the email-verification callback and the OAuth error redirect. **No trailing slash, and it must also appear in `TRUSTED_ORIGINS`** or verification links are rejected with `403 INVALID_CALLBACK_URL`. Defaults to the first `TRUSTED_ORIGINS` entry |
+| 🔓 `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional — enables "Sign in with Google". **Set both or neither** |
+| 🐙 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Optional — enables "Sign in with GitHub". **Set both or neither** |
+| ⏱️ `AI_STREAM_IDLE_TIMEOUT_MS` | Optional (90000) — aborts a streaming generation that stops producing tokens, so it reaches the refund path instead of hanging |
+| 🧹 `GENERATION_SWEEP_ON_BOOT` | Optional (on) — on startup, refunds and marks failed any generation killed by a restart. **Single-instance only**; set `false` before scaling out |
 
 The client only needs one variable, in `client/.env`:
 
@@ -140,7 +145,45 @@ The client only needs one variable, in `client/.env`:
 > ```
 
 > [!NOTE]
-> Password-reset mail goes over Brevo's **HTTP API**, not SMTP — Render's free tier blocks outbound SMTP ports, so an SMTP client just hangs. Leave Brevo's "Authorized IPs" setting **disabled**: Render's free-tier outbound IP isn't static, so a whitelist turns every send into `401 unauthorized`.
+> Password-reset and verification mail go over Brevo's **HTTP API**, not SMTP — Render's free tier blocks outbound SMTP ports, so an SMTP client just hangs. Leave Brevo's "Authorized IPs" setting **disabled**: Render's free-tier outbound IP isn't static, so a whitelist turns every send into `401 unauthorized`.
+
+---
+
+## 🔓 Enabling Google / GitHub sign-in
+
+Social sign-in is wired up but **ships disabled** — with no credentials set, the server registers no providers and the client renders no buttons. You need to create the OAuth apps yourself.
+
+The redirect URI always points at **the API**, never at the client, and `/api/auth` is better-auth's base path:
+
+```
+http://localhost:3000/api/auth/callback/google          # local
+https://<your-api>.onrender.com/api/auth/callback/google # production
+```
+
+<table>
+<tr><th align="left">Google</th><td>
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create or pick a project.
+2. **APIs & Services → OAuth consent screen** → External. Scopes: `openid`, `email`, `profile` (better-auth's defaults — don't add more). While the app is in *Testing*, only accounts listed under **Test users** can sign in.
+3. **Credentials → Create Credentials → OAuth client ID → Web application.**
+4. Add both redirect URIs above, exactly, with no trailing slash.
+5. Copy the id/secret into `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+
+</td></tr>
+<tr><th align="left">GitHub</th><td>
+
+1. [github.com/settings/developers](https://github.com/settings/developers) → **OAuth Apps → New OAuth App** (an *OAuth App*, not a GitHub App).
+2. Authorization callback URL → the production URI above.
+3. GitHub allows **one** callback URL per app, so create a **second** app for `http://localhost:3000/...` if you want local sign-in.
+4. Copy the id/secret into `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`.
+
+</td></tr>
+</table>
+
+> [!IMPORTANT]
+> Set **both** the id and the secret for a provider, or neither. A half-configured provider still gets registered by better-auth (it only logs a warning), so the button appears and then dead-ends on the provider's own `invalid_client` error page.
+
+Because the client asks the API which providers are live (`GET /api/public/config`), turning a provider on is a **server restart — not a client redeploy**.
 
 ---
 
@@ -170,15 +213,21 @@ client/                 # Vite SPA
     pages/               # Home, Projects (builder), Community, Settings, ...
     components/
       home/                # landing page sections
-      projects/            # builder UI: chat sidebar, iframe preview, element editor
+      projects/            # builder UI: chat sidebar, iframe preview, element editor,
+                           #   code editor (lazy-loaded CodeMirror), audit panel
       ui/                   # shadcn primitives
     lib/, configs/, types/  # auth client, axios instance, shared types
 
 server/                 # Express API
   configs/openai.ts      # the only place AI model/timeout config lives
-  controllers/            # project creation, revisions, publishing, credits
+  controllers/            # project creation, revisions, publishing, credits, audit
   lib/html.ts             # extracts and validates raw HTML from model output
-  lib/auth.ts             # better-auth setup (sessions, password reset)
+  lib/htmlScan.ts         # dependency-free HTML tag scanner
+  lib/audit.ts            # 19 weighted SEO/accessibility checks + fix-prompt builder
+  lib/conversation.ts     # assistant message catalog + revision-history filter
+  lib/generationStream.ts # live-preview SSE channels
+  lib/aiStream.ts         # streamed model completions
+  lib/auth.ts             # better-auth setup (sessions, reset, verification, OAuth)
   lib/email.ts            # Brevo HTTP sender — the only email path in the repo
   prisma/schema.prisma    # User, WebsiteProject, Conversation, Version, ...
 
@@ -189,10 +238,11 @@ render.yaml              # Render deployment blueprint for the API
 
 ## 🚧 Known limitations
 
-- ⚡ Generation is fire-and-forget in memory — if the server restarts mid-generation, that project is stranded with no result and no refund.
+- ⚡ Generation is still fire-and-forget in memory, but a restart no longer strands it: a startup sweep marks such projects failed and refunds the credits. That sweep, and the live-preview stream, assume **one server instance** — set `GENERATION_SWEEP_ON_BOOT=false` before scaling out.
 - 💳 No payment provider is wired up yet; credit purchases return "not implemented."
 - 🐢 Free OpenRouter models are slow (tens of seconds to a few minutes per page) and occasionally rate-limited — a paid key is the biggest reliability upgrade available.
-- 🧪 Test coverage is limited to `server/lib/html.ts`; most verification is manual (typecheck, lint, build, exercising the app).
+- 🔓 Social sign-in has not been exercised against real Google/GitHub OAuth apps yet — the code paths and the disabled-by-default degradation are verified, the callback round-trip is not.
+- 🧪 218 tests cover the pure logic (`html`, `conversation`, `htmlScan`, `audit`). The controllers, the SSE registry and all React components are untested, there is no CI, and the visual editor / Code tab are verified by review + build only.
 
 ---
 

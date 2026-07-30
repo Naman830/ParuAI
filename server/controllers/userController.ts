@@ -276,8 +276,16 @@ export const sweepStaleGenerations = async (opts?: {
       // produced code is genuinely failed.
       const nextStatus = row.current_code ? "ready" : "failed";
 
+      // `current_code` is re-asserted in the CAS, not just read from the findMany
+      // above: a generation can finish between the two, and a refund for a
+      // project that now HAS a document would be paying for work that landed.
+      // Re-checking it here makes that impossible rather than merely unlikely.
       const { count } = await prisma.websiteProject.updateMany({
-        where: { id: row.id, status: { in: ["pending", "generating"] } },
+        where: {
+          id: row.id,
+          status: { in: ["pending", "generating"] },
+          ...(nextStatus === "failed" ? { current_code: null } : {}),
+        },
         data: { status: nextStatus },
       });
 

@@ -57,7 +57,22 @@ You are a prompt enhancement specialist. The user wants to make changes to their
     3. Clarifying the desired outcome
     4. Using clear technical terms
 
+Earlier requests are provided for context — resolve pronouns and relative words ("it", "that", "darker", "bigger") against them, and describe the change in absolute terms.
+
 Return ONLY the enhanced request, nothing else. Keep it concise (1-2 sentences).
+
+NOTE: the user message for this call now carries a filtered history block built by
+server/lib/conversation.ts::formatRevisionHistory, of the form:
+
+    Earlier requests from the user for this website (oldest first):
+    1. build me a coffee shop landing page
+    2. make the hero section blue
+
+    User's new request: "actually darker"
+
+This call is SKIPPED entirely when the revision request sets `enhance: false`
+(the audit's "Fix with AI" does, because this prompt's "1-2 sentences" rule would
+compress a numbered list of markup fixes into one vague line).
 
 -----------------------------------------------------------------------------------------------------
 
