@@ -36,13 +36,17 @@ export const makeRevision = async (
 
   try {
     const { projectId } = req.params;
-    const { message } = req.body;
+    // Guard the destructure: a missing/non-JSON body makes req.body undefined,
+    // and destructuring it threw a TypeError that surfaced as a 500 instead of a
+    // clean 400.
+    const body = req.body ?? {};
+    const { message } = body;
     // Opt-out of the prompt enhancer. The enhancer is told to return "1-2
     // sentences", which is right for vague human prose but destroys an already
     // precise machine-generated instruction — the audit's "Fix with AI" sends a
     // numbered list of markup fixes and needs every item to survive. Defaults to
     // true so the Sidebar chat behaves exactly as before.
-    const skipEnhance = req.body?.enhance === false;
+    const skipEnhance = body.enhance === false;
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized User" });
@@ -95,6 +99,22 @@ export const makeRevision = async (
     });
     const history = formatRevisionHistory(priorTurns);
 
+    // Atomic conditional charge — same TOCTOU fix as createUserProject. The
+    // `credits < cost` check above is a fast path; this single statement is the
+    // race-safe gate that actually keeps the balance from going negative under
+    // concurrent revisions. Charged before the user row is written so a lost
+    // race leaves no orphaned prompt in the sidebar.
+    const { count } = await prisma.user.updateMany({
+      where: { id: userId, credits: { gte: REVISION_COST } },
+      data: { credits: { decrement: REVISION_COST } },
+    });
+    if (count === 0) {
+      return res
+        .status(403)
+        .json({ message: "Add more Credit to make changes" });
+    }
+    charged = true;
+
     await prisma.conversation.create({
       data: {
         role: "user",
@@ -102,12 +122,6 @@ export const makeRevision = async (
         projectId,
       },
     });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { credits: { decrement: REVISION_COST } },
-    });
-    charged = true;
 
     job = openJob(projectId, "revision");
     await prisma.websiteProject.update({
@@ -293,7 +307,16 @@ You are an expert web developer.
 
     console.log(error.code || error.message);
     if (!res.headersSent) {
-      return res.status(500).json({ message: error.message });
+      // Do NOT surface error.message: on the free tier ~1/3 of revisions fail
+      // with a raw upstream provider error (e.g. "Upstream error from Nvidia:
+      // ResourceExhausted…"), which leaks the model backend to the client and
+      // reads as a scary bug rather than a transient limit. The credits were
+      // refunded above when charged, so tell the user that and to retry.
+      return res.status(500).json({
+        message: charged
+          ? "We couldn't generate your changes right now. Your credits were refunded — please try again."
+          : "We couldn't generate your changes right now. Please try again.",
+      });
     }
   } finally {
     // Leak-proof backstop. Safe precisely because finish() is idempotent: it
@@ -552,7 +575,9 @@ export const saveProjectCode = async (
   try {
     const userId = req.userId;
     const { projectId } = req.params;
-    const { code } = req.body;
+    // Guard the destructure: a missing/non-JSON body would otherwise throw a
+    // TypeError and answer 500 instead of the 400 below.
+    const { code } = req.body ?? {};
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized " });

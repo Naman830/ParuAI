@@ -81,7 +81,13 @@ const Community = () => {
                           <iframe
                             srcDoc={project.current_code}
                             className="absolute top-0 left-0 w-[1200px] h-[800px] origin-top-left pointer-events-none"
-                            sandbox="allow-scripts allow-same-origin"
+                            // No allow-same-origin: these are OTHER users'
+                            // published pages, and with a srcDoc frame that flag
+                            // grants them the app's own origin — enough to read
+                            // window.parent and call the API as the viewer. The
+                            // thumbnail only needs to render, so run it in an
+                            // opaque origin.
+                            sandbox="allow-scripts"
                             style={{ transform: "scale(0.25)" }}
                           />
                         ) : (

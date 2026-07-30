@@ -352,7 +352,10 @@ export const getUserCredits = async (req: Request, res: Response) => {
 export const createUserProject = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
-    const { initial_prompt } = req.body;
+    // Guard the destructure: with a missing or non-JSON body req.body is
+    // undefined, and `const { initial_prompt } = undefined` throws a TypeError
+    // that surfaced as a 500 with an internal message instead of a clean 400.
+    const { initial_prompt } = req.body ?? {};
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized User" });
@@ -377,39 +380,61 @@ export const createUserProject = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized User" });
     }
 
-    if (user.credits < PROJECT_COST) {
-      return res
-        .status(403)
-        .json({ message: "add credits to create more projects" });
-    }
-
     const prompt = initial_prompt.trim();
 
-    // Create a new project. `status` comes from the schema default (pending).
-    const project = await prisma.websiteProject.create({
-      data: {
-        name: prompt.length > 50 ? prompt.substring(0, 47) + "..." : prompt,
-        initial_prompt: prompt,
-        userId,
-      },
-    });
-
-    await prisma.conversation.create({
-      data: {
-        role: "user",
-        content: prompt,
-        projectId: project.id,
-      },
-    });
-
-    // Charge + bump the creation counter in a single round-trip (was 2 updates).
-    await prisma.user.update({
-      where: { id: userId },
+    // Atomic conditional charge. A findUnique-then-decrement is a TOCTOU race:
+    // two concurrent requests both read the same balance, both pass a
+    // `credits < cost` check, and both decrement — driving credits negative and
+    // handing out free generations (verified: 5 concurrent charges on a
+    // 5-credit balance all succeeded and left it at -20). Gating the decrement
+    // on `credits >= cost` inside one statement makes at most floor(balance/cost)
+    // concurrent charges succeed and the balance can never fall below zero.
+    const { count: charged } = await prisma.user.updateMany({
+      where: { id: userId, credits: { gte: PROJECT_COST } },
       data: {
         credits: { decrement: PROJECT_COST },
         totalCreation: { increment: 1 },
       },
     });
+
+    if (charged === 0) {
+      return res
+        .status(403)
+        .json({ message: "add credits to create more projects" });
+    }
+
+    // Charged already, so any failure creating the project must refund — else a
+    // transient insert error silently eats 5 credits.
+    let project;
+    try {
+      // Create a new project. `status` comes from the schema default (pending).
+      project = await prisma.websiteProject.create({
+        data: {
+          name: prompt.length > 50 ? prompt.substring(0, 47) + "..." : prompt,
+          initial_prompt: prompt,
+          userId,
+        },
+      });
+
+      await prisma.conversation.create({
+        data: {
+          role: "user",
+          content: prompt,
+          projectId: project.id,
+        },
+      });
+    } catch (createError) {
+      await prisma.user
+        .update({
+          where: { id: userId },
+          data: {
+            credits: { increment: PROJECT_COST },
+            totalCreation: { decrement: 1 },
+          },
+        })
+        .catch(() => {});
+      throw createError;
+    }
 
     // Answer now; generation continues in the background and the client watches
     // it over SSE (falling back to the poll).

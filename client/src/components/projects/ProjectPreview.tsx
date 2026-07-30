@@ -71,6 +71,21 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
     const isStreaming = Boolean(streamingCode);
     const progress = streamProgress ?? EMPTY_PROGRESS;
 
+    // allow-same-origin is required ONLY by the builder, where getCode() and the
+    // streaming document.write read the iframe's contentDocument. It is
+    // deliberately WITHHELD for public/untrusted renders (View, Preview, and any
+    // other showEditorPanel={false} caller): a srcDoc frame with allow-same-origin
+    // runs in the PARENT app's origin, so a published site's own <script> can
+    // reach window.parent, read the app DOM, and fire credentialed fetches to the
+    // API as whoever is viewing it — a stored-XSS / account-data-theft path
+    // through the community gallery (verified live). Dropping it forces an opaque
+    // origin: the page still runs its own scripts but cannot touch the app, its
+    // cookies, or make same-origin API calls. Only the owner's own code is ever
+    // rendered with same-origin, and only in the builder.
+    const sandbox = showEditorPanel
+      ? "allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+      : "allow-scripts allow-popups allow-forms allow-modals";
+
     const clearSelection = () => {
       setSelectedElement(null);
       if (iframeRef.current?.contentWindow) {
@@ -219,11 +234,13 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
               ref={streamFrameRef}
               title="Website preview (generating)"
               // No src/srcDoc: the about:blank document is fed incrementally by
-              // the effect above. Same sandbox string as the committed preview —
-              // allow-same-origin is what makes contentDocument reachable, and
-              // withholding allow-top-navigation stops a half-built page from
-              // navigating the builder away from itself.
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+              // the effect above. Same sandbox string as the committed preview.
+              // Streaming only ever happens in the builder (showEditorPanel), so
+              // this resolves to the same-origin variant that makes
+              // contentDocument reachable for document.write; withholding
+              // allow-top-navigation stops a half-built page from navigating the
+              // builder away from itself.
+              sandbox={sandbox}
               className={`h-full max-sm:w-full ${resolutions[device] || resolutions.desktop} mx-auto`}
             />
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/90 backdrop-blur-xl border border-border text-xs text-muted-foreground shadow-[var(--panel-shadow)]">
@@ -237,10 +254,12 @@ const ProjectPreview = forwardRef<ProjectPreviewRef, ProjectPreviewProps>(
               ref={iframeRef}
               title="Website preview"
               srcDoc={injectPreview(html)}
-              // allow-same-origin is required: getCode() reads contentDocument.
-              // Withholding allow-top-navigation stops generated pages from
-              // navigating the builder away from itself.
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals"
+              // In the builder allow-same-origin is required (getCode() reads
+              // contentDocument); for public renders it is dropped so an
+              // untrusted published page cannot escape into the app. See the
+              // `sandbox` definition above. Withholding allow-top-navigation
+              // stops generated pages from navigating the builder away.
+              sandbox={sandbox}
               className={`h-full max-sm:w-full ${resolutions[device] || resolutions.desktop} mx-auto transition-all`}
               // Drops a selection pointing at an element from the previous
               // document. An event handler, deliberately: doing this in an

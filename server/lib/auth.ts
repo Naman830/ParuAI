@@ -122,6 +122,28 @@ export const auth = betterAuth({
     deleteUser: { enabled: true },
   },
 
+  // Rate limiting for the /api/auth/* surface. Without it the credential and
+  // email endpoints are open to online password guessing and to reset-email
+  // flooding — every /forget-password for a real address triggers a Brevo send,
+  // so an unthrottled loop is both an account-enumeration oracle and a way to
+  // burn the (free-tier) email quota and spam a victim's inbox.
+  //
+  // `enabled: true` turns it on in every environment (better-auth otherwise
+  // limits only in production). Memory storage is process-local, which matches
+  // this app's documented single-instance deployment; it must move to the DB /
+  // a shared store before scaling out (same caveat as the generation sweep).
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 10 },
+      "/sign-up/email": { window: 60, max: 10 },
+      "/forget-password": { window: 60, max: 3 },
+      "/reset-password": { window: 60, max: 5 },
+    },
+  },
+
   trustedOrigins,
   baseURL: process.env.BETTER_AUTH_URL!,
   secret: process.env.BETTER_AUTH_SECRET!,

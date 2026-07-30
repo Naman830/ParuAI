@@ -99,7 +99,11 @@ const MyProjects = () => {
                         <iframe
                           srcDoc={project.current_code}
                           className="absolute top-0 left-0 w-[1200px] h-[800px] origin-top-left pointer-events-none"
-                          sandbox="allow-scripts allow-same-origin"
+                          // Own code, but a thumbnail never needs same-origin, so
+                          // withhold it (defense-in-depth: an opaque origin can't
+                          // reach the parent app or the API even if the rendered
+                          // page tries).
+                          sandbox="allow-scripts"
                           style={{ transform: "scale(0.25)" }}
                         />
                       ) : (
